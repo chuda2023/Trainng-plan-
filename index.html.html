@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בונה תוכניות אימון</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f9; --white: #ffffff; --border: #e2e6ea;
+    --accent: #2563eb; --accent-light: #eff6ff;
+    --text: #1a202c; --muted: #6b7280;
+    --danger: #ef4444; --danger-light: #fef2f2;
+    --success: #22c55e; --radius: 12px; --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow);
+  }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header h1 span { color: var(--accent); }
+  .tabs { display: flex; gap: 4px; }
+  .tab-btn {
+    padding: 7px 18px; border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 500;
+    background: var(--white); color: var(--muted); transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 24px; }
+
+  .add-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  input[type=text], input[type=number] {
+    border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px;
+    font-family: 'Heebo', sans-serif; font-size: 14px; color: var(--text);
+    background: #fff; outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  input[type=text]:focus, input[type=number]:focus { border-color: var(--accent); }
+
+  .gif-area {
+    border: 2px dashed var(--border); border-radius: 8px; height: 80px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.15s; background: #fafafa;
+  }
+  .gif-area:hover { border-color: var(--accent); background: var(--accent-light); }
+  .gif-area.has { border-color: var(--success); border-style: solid; }
+  .gif-area img.prev { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .gif-hint { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; pointer-events: none; }
+  .gif-area.has .gif-hint { display: none; }
+  .gif-clear {
+    position: absolute; top: 4px; left: 4px; z-index: 5;
+    background: rgba(0,0,0,0.65); color: #fff; border: none;
+    border-radius: 50%; width: 22px; height: 22px; font-size: 14px;
+    cursor: pointer; display: none; align-items: center; justify-content: center;
+  }
+  .gif-area.has .gif-clear { display: flex; }
+  input[type=file] { display: none; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 600; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn-outline { background: #fff; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: #16a34a; color: #fff; }
+  .btn-green:hover { background: #15803d; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .ex-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .ex-card-img { width: 100%; max-height: 300px; object-fit: contain; display: block; background: var(--bg); }
+  .ex-card-no-img { width: 100%; height: 100px; background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+  .ex-card-footer { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); }
+  .ex-card-name { font-weight: 600; font-size: 14px; }
+  .empty { text-align: center; padding: 40px; color: var(--muted); grid-column: 1/-1; }
+  .empty .icon { font-size: 40px; margin-bottom: 8px; }
+
+  .picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .picker-card {
+    background: var(--white); border: 2px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.15s;
+  }
+  .picker-card:hover { border-color: var(--accent); }
+  .picker-card.sel { border-color: var(--accent); background: var(--accent-light); }
+  .picker-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--bg); flex-shrink: 0; }
+  .picker-name { font-size: 14px; font-weight: 500; flex: 1; }
+  .check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; }
+  .picker-card.sel .check { background: var(--accent); border-color: var(--accent); }
+
+  .sel-table { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; background: var(--white); }
+  .sel-head { padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  /* sel-row moved to sel-row-wrap */
+  .sel-row input[type=number] { text-align: center; }
+  .sel-name { font-size: 14px; font-weight: 500; }
+  .sel-row-wrap { border-bottom: 1px solid var(--border); padding: 12px 16px; }
+  .sel-row-wrap:last-child { border-bottom: none; }
+  .sel-row { display: grid; grid-template-columns: auto 1fr 80px 80px 90px auto; gap: 10px; align-items: center; margin-bottom: 8px; border-bottom: none; padding: 0; }
+  .note-input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-family: 'Heebo', sans-serif; font-size: 13px; color: var(--text); background: #fafafa; resize: none; outline: none; transition: border-color 0.15s; }
+  .note-input:focus { border-color: var(--accent); background: #fff; }
+  /* DRAG & DROP */
+  .sel-row-wrap { position: relative; }
+  .drag-handle {
+    cursor: grab; color: var(--muted); font-size: 18px; padding: 0 4px;
+    user-select: none; display: flex; align-items: center; line-height: 1;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .sel-row-wrap.dragging { opacity: 0.4; background: var(--accent-light); }
+  .sel-row-wrap.drag-over { border-top: 3px solid var(--accent); }
+
+
+
+  /* CATEGORIES */
+  select.cat-select {
+    border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px;
+    font-family: 'Heebo', sans-serif; font-size: 14px; color: var(--text);
+    background: #fff; outline: none; transition: border-color 0.15s; width: 100%; cursor: pointer;
+  }
+  select.cat-select:focus { border-color: var(--accent); }
+
+  .cat-badge {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; margin-bottom: 6px;
+  }
+  .cat-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .cat-filter-btn {
+    padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--white); color: var(--muted); font-family: 'Heebo', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .cat-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .cat-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .cat-section-title {
+    font-size: 13px; font-weight: 800; color: var(--muted); letter-spacing: 1px;
+    text-transform: uppercase; padding: 16px 0 8px; border-bottom: 1px solid var(--border);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* EDIT inline */
+  .ex-card-footer { padding: 10px 14px; display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .ex-card-name-wrap { flex: 1; min-width: 0; }
+  .ex-card-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ex-name-edit { display: none; width: 100%; border: 1px solid var(--accent); border-radius: 6px; padding: 4px 8px; font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 600; }
+  .cat-select-card { font-size: 12px; border-radius: 6px; padding: 4px 6px; border: 1px solid var(--border); font-family: 'Heebo', sans-serif; color: var(--muted); background: #fafafa; cursor: pointer; }
+  .btn-edit { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; padding: 5px 10px; font-size: 12px; }
+  .btn-edit:hover { background: #0369a1; color: #fff; }
+  .btn-save { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 5px 10px; font-size: 12px; display: none; }
+  .btn-save:hover { background: #16a34a; color: #fff; }
+
+  .gen-btn {
+    width: 100%; padding: 14px; font-size: 16px; border-radius: 10px;
+    background: #16a34a; color: #fff; border: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-weight: 700; transition: all 0.2s;
+  }
+  .gen-btn:hover:not(:disabled) { background: #15803d; }
+  .gen-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  /* MODAL */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--white); border-radius: 16px; width: 100%; max-width: 500px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-head h2 { font-size: 18px; font-weight: 700; }
+  .close-x { background: var(--bg); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+
+  /* SHARE MODAL */
+  .share-steps { display: flex; flex-direction: column; gap: 16px; }
+  .share-step { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num { width: 28px; height: 28px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .step-text { font-size: 14px; line-height: 1.5; padding-top: 4px; }
+  .step-text strong { display: block; font-weight: 700; margin-bottom: 2px; }
+  .dl-btn-big {
+    width: 100%; padding: 14px; margin-top: 8px; font-size: 16px; border-radius: 10px;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-weight: 700; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .dl-btn-big:hover { background: #1d4ed8; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .no-lib { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 16px; color: var(--muted); text-align: center; font-size: 14px; }
+  #loading { position:fixed; inset:0; background:rgba(255,255,255,0.85); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:16px; font-weight:600; color:var(--accent); z-index:999; gap:12px; }
+  .spinner { width:36px; height:36px; border:4px solid #bfdbfe; border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div>טוען...</div>
+
+<header>
+  <h1>🏋️ בונה <span>תוכניות אימון</span></h1>
+  <div class="tabs">
+    <button class="tab-btn active" id="btn-library" onclick="switchTab('library')">📚 ספרייה</button>
+    <button class="tab-btn" id="btn-build" onclick="switchTab('build')">⚡ בנה תוכנית</button>
+  </div>
+</header>
+
+<!-- LIBRARY -->
+<div id="tab-library" class="tab-content active">
+  <div class="container">
+    <div class="section-label">הוסף תרגיל חדש</div>
+    <div class="card">
+      <div class="add-form">
+        <div class="form-group">
+          <div class="form-label">שם התרגיל</div>
+          <input type="text" id="ex-name" placeholder="למשל: סקוואט" onkeydown="if(event.key==='Enter')addExercise()">
+        </div>
+        <div class="form-group">
+          <div class="form-label">קבוצת שריר</div>
+          <select class="cat-select" id="ex-cat">
+            <option value="">ללא קטגוריה</option>
+            <option value="רגלים">🦵 רגלים</option>
+            <option value="גב">🔙 גב</option>
+            <option value="חזה">💪 חזה</option>
+            <option value="כתפיים">🏋️ כתפיים</option>
+            <option value="ידיים">💪 ידיים</option>
+            <option value="הנפות">🔄 הנפות</option>
+            <option value="בטן">⚡ בטן</option>
+            <option value="משקל גוף">🤸 משקל גוף</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="form-label">תמונה / GIF</div>
+          <input type="file" id="gif-file" accept="image/*,.gif" onchange="onFileChosen(this)">
+          <div class="gif-area" id="gif-area"
+               onclick="document.getElementById('gif-file').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+               ondragleave="this.style.borderColor=''"
+               ondrop="onDrop(event)">
+            <div class="gif-hint">🖼️ לחץ לבחור קובץ / גרור לכאן</div>
+            <button type="button" class="gif-clear" id="gif-clear" onclick="clearGif(event)">×</button>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addExercise()" style="height:40px;align-self:end">+ הוסף</button>
+      </div>
+    </div>
+    <div class="section-label">הספרייה שלך · <span id="lib-count">0</span> תרגילים</div>
+    <div class="cat-filter-bar" id="cat-filter-bar"></div>
+    <div id="ex-grid-wrap"></div>
+  </div>
+</div>
+
+<!-- BUILD -->
+<div id="tab-build" class="tab-content">
+  <div class="container">
+    <div class="section-label">שם הספורטאי</div>
+    <div class="card">
+      <input type="text" id="athlete-name" placeholder="למשל: דניאל לוי" style="width:100%;max-width:360px">
+    </div>
+    <div class="section-label">בחר תרגילים</div>
+    <div id="picker-grid"></div>
+    <div id="sel-wrap" style="display:none">
+      <div class="sel-table">
+        <div class="sel-head">
+          <span>תרגילים נבחרים</span>
+          <span class="badge" id="sel-count">0</span>
+        </div>
+        <div id="sel-rows"></div>
+      </div>
+    </div>
+    <button class="gen-btn" id="gen-btn" onclick="openShareModal()" disabled>📲 צור תוכנית לשליחה</button>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>📲 שליחה בווטסאפ</h2>
+      <button class="close-x" onclick="closeModal()">×</button>
+    </div>
+    <div class="share-steps">
+      <div class="share-step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>הורד את קובץ התוכנית</strong>קובץ HTML שמכיל את כל התרגילים עם GIFים מונפשים</div>
+      </div>
+      <button class="dl-btn-big" id="dl-btn" onclick="downloadHTML()">⬇️ הורד קובץ תוכנית</button>
+      <div class="share-step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>שלח בווטסאפ</strong>פתח שיחה עם הספורטאי ← צרף קובץ ← בחר את הקובץ שהורדת</div>
+      </div>
+      <div class="share-step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>הספורטאי פותח בדפדפן</strong>לוחץ על הקובץ ← "פתח בדפדפן" ← רואה תוכנית מלאה עם GIFים</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── IndexedDB ──────────────────────────────────────────────────────────────
+let db;
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('TrainingApp', 1);
+    req.onupgradeneeded = e => {
+      if (!e.target.result.objectStoreNames.contains('exercises'))
+        e.target.result.createObjectStore('exercises', { keyPath: 'id' });
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function dbGetAll() {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('exercises','readonly').objectStore('exercises').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function dbPut(obj) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('exercises','readwrite').objectStore('exercises').put(obj);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function dbDelete(id) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('exercises','readwrite').objectStore('exercises').delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let exercises = [], selectedOrder = [], pendingGif = null, selData = {};
+
+openDB().then(async () => {
+  exercises = await dbGetAll();
+  exercises.sort((a,b) => a.id - b.id);
+  renderLibrary();
+  document.getElementById('loading').style.display = 'none';
+}).catch(err => {
+  alert('שגיאה: ' + err);
+  document.getElementById('loading').style.display = 'none';
+});
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  ['library','build'].forEach(n => {
+    document.getElementById('tab-'+n).classList.toggle('active', n===t);
+    document.getElementById('btn-'+n).classList.toggle('active', n===t);
+  });
+  if (t === 'build') renderPicker();
+}
+
+// ── GIF ────────────────────────────────────────────────────────────────────
+function onFileChosen(input) { const f = input.files[0]; if (f) loadFile(f); input.value=''; }
+function onDrop(e) {
+  e.preventDefault(); document.getElementById('gif-area').style.borderColor='';
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+}
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    pendingGif = ev.target.result;
+    const area = document.getElementById('gif-area');
+    area.querySelectorAll('img.prev').forEach(i => i.remove());
+    const img = document.createElement('img'); img.className='prev'; img.src=pendingGif;
+    area.insertBefore(img, area.firstChild); area.classList.add('has');
+  };
+  reader.readAsDataURL(file);
+}
+function clearGif(e) {
+  e.stopPropagation(); pendingGif = null;
+  const area = document.getElementById('gif-area');
+  area.querySelectorAll('img.prev').forEach(i => i.remove());
+  area.classList.remove('has');
+}
+
+// ── Library ────────────────────────────────────────────────────────────────
+async function addExercise() {
+  const name = document.getElementById('ex-name').value.trim();
+  if (!name) { alert('נא להזין שם תרגיל'); return; }
+  const cat = document.getElementById('ex-cat').value;
+  const ex = { id: Date.now(), name, cat, gif: pendingGif || '' };
+  await dbPut(ex); exercises.push(ex);
+  document.getElementById('ex-name').value = '';
+  document.getElementById('ex-cat').value = '';
+  clearGif({ stopPropagation:()=>{} });
+  renderLibrary();
+}
+async function deleteExercise(id) {
+  if (!confirm('למחוק?')) return;
+  await dbDelete(id);
+  exercises = exercises.filter(e => e.id !== id); selectedOrder = selectedOrder.filter(x => x !== id);
+  renderLibrary();
+  if (document.getElementById('tab-build').classList.contains('active')) renderPicker();
+}
+const CATS = ['רגלים','גב','חזה','כתפיים','ידיים','הנפות','בטן','משקל גוף'];
+const CAT_EMOJI = {'רגלים':'🦵','גב':'🔙','חזה':'💪','כתפיים':'🏋️','ידיים':'💪','הנפות':'🔄','בטן':'⚡','משקל גוף':'🤸','':'📌'};
+const CAT_COLOR = {'רגלים':'#fef3c7,#d97706','גב':'#dbeafe,#2563eb','חזה':'#fce7f3,#db2777','כתפיים':'#ede9fe,#7c3aed','ידיים':'#d1fae5,#059669','הנפות':'#ffedd5,#ea580c','בטן':'#fee2e2,#dc2626','משקל גוף':'#f3f4f6,#374151','':'#f3f4f6,#6b7280'};
+let libFilter = 'all';
+
+function catBadgeStyle(cat) {
+  const [bg,fg] = (CAT_COLOR[cat||'']||'#f3f4f6,#6b7280').split(',');
+  return `background:${bg};color:${fg}`;
+}
+
+function renderCatFilterBar() {
+  const bar = document.getElementById('cat-filter-bar');
+  const usedCats = [...new Set(exercises.map(e => e.cat||''))];
+  const hasCats = usedCats.some(c => c !== '');
+  if (!hasCats) { bar.innerHTML=''; return; }
+  const allCats = ['all', ...CATS.filter(c => usedCats.includes(c)), ...(usedCats.includes('') ? [''] : [])];
+  bar.innerHTML = allCats.map(c => {
+    const label = c === 'all' ? 'הכל' : (c === '' ? 'ללא קטגוריה' : (CAT_EMOJI[c]||'') + ' ' + c);
+    return `<button class="cat-filter-btn ${libFilter===c?'active':''}" onclick="setLibFilter('${c}')">${label}</button>`;
+  }).join('');
+}
+
+function setLibFilter(cat) { libFilter = cat; renderLibrary(); }
+
+function renderExCard(ex) {
+  const catLabel = ex.cat ? `${CAT_EMOJI[ex.cat]||''} ${ex.cat}` : '';
+  return `<div class="ex-card" id="card-${ex.id}">
+    ${ex.gif ? `<img class="ex-card-img" src="${ex.gif}" alt="${ex.name}">` : `<div class="ex-card-no-img">אין תמונה</div>`}
+    <div class="ex-card-footer">
+      <div class="ex-card-name-wrap">
+        ${catLabel ? `<span class="cat-badge" style="${catBadgeStyle(ex.cat)}">${catLabel}</span><br>` : ''}
+        <span class="ex-card-name" id="name-display-${ex.id}">${ex.name}</span>
+        <input class="ex-name-edit" id="name-edit-${ex.id}" value="${ex.name}" onkeydown="if(event.key==='Enter')saveEdit(${ex.id})">
+      </div>
+      <select class="cat-select-card" id="cat-edit-${ex.id}" onchange="saveCat(${ex.id},this.value)">
+        <option value="" ${!ex.cat?'selected':''}>ללא</option>
+        ${CATS.map(c=>`<option value="${c}" ${ex.cat===c?'selected':''}>${CAT_EMOJI[c]||''} ${c}</option>`).join('')}
+      </select>
+      <button class="btn btn-edit" id="edit-btn-${ex.id}" onclick="startEdit(${ex.id})">✏️</button>
+      <button class="btn btn-save" id="save-btn-${ex.id}" onclick="saveEdit(${ex.id})">✓</button>
+      <button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="deleteExercise(${ex.id})">🗑</button>
+    </div>
+  </div>`;
+}
+
+function renderLibrary() {
+  const wrap = document.getElementById('ex-grid-wrap');
+  document.getElementById('lib-count').textContent = exercises.length;
+  renderCatFilterBar();
+  if (!exercises.length) { wrap.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="icon">🏃</div>הוסף תרגיל ראשון!</div>`; return; }
+
+  let filtered = libFilter === 'all' ? exercises : exercises.filter(e => (e.cat||'') === libFilter);
+  if (!filtered.length) { wrap.innerHTML=`<div class="empty"><div class="icon">🔍</div>אין תרגילים בקטגוריה זו</div>`; return; }
+
+  if (libFilter !== 'all') {
+    wrap.innerHTML = `<div class="ex-grid">${filtered.map(renderExCard).join('')}</div>`;
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  filtered.forEach(ex => {
+    const c = ex.cat || '';
+    if (!groups[c]) groups[c] = [];
+    groups[c].push(ex);
+  });
+  const orderedCats = [...CATS.filter(c => groups[c]), ...(groups[''] ? [''] : [])];
+  wrap.innerHTML = orderedCats.map(cat => `
+    <div style="margin-bottom:28px">
+      <div class="cat-section-title">
+        <span class="cat-badge" style="${catBadgeStyle(cat)}">${cat ? (CAT_EMOJI[cat]||'')+' '+cat : '📌 ללא קטגוריה'}</span>
+        <span style="font-size:12px;color:var(--muted)">${groups[cat].length} תרגילים</span>
+      </div>
+      <div class="ex-grid">${groups[cat].map(renderExCard).join('')}</div>
+    </div>`).join('');
+}
+
+function startEdit(id) {
+  document.getElementById('name-display-'+id).style.display = 'none';
+  document.getElementById('name-edit-'+id).style.display = 'inline-block';
+  document.getElementById('edit-btn-'+id).style.display = 'none';
+  document.getElementById('save-btn-'+id).style.display = 'inline-flex';
+  document.getElementById('name-edit-'+id).focus();
+}
+
+async function saveEdit(id) {
+  const newName = document.getElementById('name-edit-'+id).value.trim();
+  if (!newName) return;
+  const ex = exercises.find(e => e.id===id);
+  ex.name = newName;
+  await dbPut(ex);
+  document.getElementById('name-display-'+id).textContent = newName;
+  document.getElementById('name-display-'+id).style.display = '';
+  document.getElementById('name-edit-'+id).style.display = 'none';
+  document.getElementById('edit-btn-'+id).style.display = '';
+  document.getElementById('save-btn-'+id).style.display = 'none';
+}
+
+async function saveCat(id, cat) {
+  const ex = exercises.find(e => e.id===id);
+  ex.cat = cat;
+  await dbPut(ex);
+  renderLibrary();
+}
+
+// ── Build ──────────────────────────────────────────────────────────────────
+function renderPicker() {
+  const grid = document.getElementById('picker-grid');
+  if (!exercises.length) { grid.innerHTML=`<div class="no-lib">הוסף תרגילים בספרייה קודם.</div>`; renderSelRows(); return; }
+
+  // Group by category
+  const groups = {};
+  exercises.forEach(ex => { const c = ex.cat||''; if (!groups[c]) groups[c]=[]; groups[c].push(ex); });
+  const orderedCats = [...CATS.filter(c => groups[c]), ...(groups[''] ? [''] : [])];
+
+  const makeCard = ex => `
+    <div class="picker-card ${selectedOrder.includes(ex.id)?'sel':''}" onclick="toggleSel(${ex.id})">
+      ${ex.gif ? `<img class="picker-thumb" src="${ex.gif}" alt="">` : `<div class="picker-thumb"></div>`}
+      <span class="picker-name">${ex.name}</span>
+      <div class="check">${selectedOrder.includes(ex.id)?'✓':''}</div>
+    </div>`;
+
+  if (orderedCats.length === 1 && orderedCats[0] === '') {
+    grid.innerHTML = `<div class="picker-grid" style="margin:0">${exercises.map(makeCard).join('')}</div>`;
+  } else {
+    grid.innerHTML = orderedCats.map(cat => `
+      <div style="grid-column:1/-1;margin-bottom:16px">
+        <div class="cat-section-title" style="margin-bottom:10px">
+          <span class="cat-badge" style="${catBadgeStyle(cat)}">${cat?(CAT_EMOJI[cat]||'')+' '+cat:'📌 ללא קטגוריה'}</span>
+        </div>
+        <div class="picker-grid" style="margin:0">${groups[cat].map(makeCard).join('')}</div>
+      </div>`).join('');
+  }
+  renderSelRows();
+}
+function toggleSel(id) { const i=selectedOrder.indexOf(id); if(i>=0) selectedOrder.splice(i,1); else selectedOrder.push(id); renderPicker(); }
+function saveCurrentValues() {
+  [...selectedOrder].forEach(id => {
+    const s = document.getElementById('sets-'+id);
+    const r = document.getElementById('reps-'+id);
+    const n = document.getElementById('note-'+id);
+    const w = document.getElementById('weight-'+id);
+    if (s) selData[id] = { sets: s.value, reps: r ? r.value : (selData[id]?.reps||10), weight: w ? w.value : (selData[id]?.weight||''), note: n ? n.value : (selData[id]?.note||'') };
+  });
+}
+function renderSelRows() {
+  saveCurrentValues();
+  const wrap = document.getElementById('sel-wrap');
+  document.getElementById('sel-count').textContent = selectedOrder.length;
+  document.getElementById('gen-btn').disabled = !selectedOrder.length;
+  if (!selectedOrder.length) { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  document.getElementById('sel-rows').innerHTML = [...selectedOrder].map(id => {
+    const ex = exercises.find(e => e.id===id); if (!ex) return '';
+    const d = selData[id] || { sets:3, reps:10, weight:'', note:'' };
+    return `<div class="sel-row-wrap" data-id="${id}" draggable="true">
+      <div class="sel-row">
+        <div class="drag-handle" title="גרור לשינוי סדר">⠿</div>
+        <div class="sel-name">${ex.name}</div>
+        <div class="form-group"><div class="form-label">סטים</div><input type="number" id="sets-${id}" value="${d.sets}" min="1" max="20"></div>
+        <div class="form-group"><div class="form-label">חזרות</div><input type="number" id="reps-${id}" value="${d.reps}" min="1" max="100"></div>
+        <div class="form-group"><div class="form-label">משקל (KG)</div><input type="number" id="weight-${id}" value="${d.weight}" min="0" step="0.5" placeholder="—"></div>
+        <button class="btn btn-danger" style="padding:6px 10px;font-size:12px" onclick="toggleSel(${id})">הסר</button>
+      </div>
+      <textarea class="note-input" id="note-${id}" rows="2" placeholder="הערות לתרגיל (אופציונלי)...">${d.note}</textarea>
+    </div>`;
+  }).join('');
+  setTimeout(initDragAndDrop, 0);
+}
+
+function initDragAndDrop() {
+  const rows = document.querySelectorAll('#sel-rows .sel-row-wrap');
+  let dragSrc = null;
+
+  rows.forEach(row => {
+    row.addEventListener('dragstart', e => {
+      dragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      document.querySelectorAll('.sel-row-wrap').forEach(r => r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.sel-row-wrap').forEach(r => r.classList.remove('drag-over'));
+      if (row !== dragSrc) row.classList.add('drag-over');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSrc || dragSrc === row) return;
+      row.classList.remove('drag-over');
+
+      // Reorder selectedOrder array
+      const fromId = parseInt(dragSrc.dataset.id);
+      const toId   = parseInt(row.dataset.id);
+      const fromIdx = selectedOrder.indexOf(fromId);
+      const toIdx   = selectedOrder.indexOf(toId);
+      selectedOrder.splice(fromIdx, 1);
+      selectedOrder.splice(toIdx, 0, fromId);
+
+      // Re-render to reflect new order
+      renderSelRows();
+      initDragAndDrop();
+    });
+  });
+}
+
+function getItems() {
+  saveCurrentValues();
+  return [...selectedOrder].map(id => {
+    const ex = exercises.find(e => e.id===id);
+    const d = selData[id] || { sets:3, reps:10, weight:'', note:'' };
+    return { ...ex, sets: d.sets, reps: d.reps, note: d.note };
+  });
+}
+
+// ── Share ──────────────────────────────────────────────────────────────────
+function openShareModal() {
+  const name = document.getElementById('athlete-name').value.trim();
+  if (!name) { alert('נא להזין שם ספורטאי'); return; }
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function downloadHTML() {
+  const name  = document.getElementById('athlete-name').value.trim();
+  const items = getItems();
+
+  const rows = items.map((ex, i) => `
+    <div class="row">
+      <div class="num">${i+1}</div>
+      <div class="img-wrap">
+        ${ex.gif ? `<img src="${ex.gif}" alt="${ex.name}">` : '<div class="no-img">אין תמונה</div>'}
+      </div>
+      <div class="info">
+        <div class="ex-name">${ex.name}</div>
+        <div class="pills">
+          <div class="pill"><div class="pill-label">סטים</div><div class="pill-val">${ex.sets}</div></div>
+          <div class="pill"><div class="pill-label">חזרות</div><div class="pill-val">${ex.reps}</div></div>
+          ${ex.weight ? `<div class="pill"><div class="pill-label">משקל</div><div class="pill-val">${ex.weight}<span style="font-size:13px;font-weight:600"> KG</span></div></div>` : ''}
+        </div>
+        ${ex.note ? `<div class="note">${ex.note}</div>` : ''}
+      </div>
+    </div>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>תוכנית אימונים – ${name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Heebo',sans-serif; background:#f4f6f9; color:#1a202c; padding:24px 16px; }
+  .page { max-width:680px; margin:0 auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.1); }
+  .page-header { background:#2563eb; color:#fff; padding:28px 32px; text-align:center; }
+  .page-header h1 { font-size:26px; font-weight:900; }
+  .page-header p { font-size:18px; opacity:0.85; margin-top:4px; }
+  .body { padding:8px 0; }
+  .row { display:flex; gap:16px; align-items:flex-start; padding:20px 24px; border-bottom:1px solid #e5e7eb; }
+  .row:last-child { border-bottom:none; }
+  .num { width:32px; height:32px; background:#2563eb; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; margin-top:4px; }
+  .img-wrap { width:160px; flex-shrink:0; border-radius:10px; overflow:hidden; background:#f3f4f6; }
+  .img-wrap img { width:100%; display:block; }
+  .no-img { height:80px; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:13px; }
+  .info { flex:1; }
+  .ex-name { font-size:19px; font-weight:800; margin-bottom:12px; }
+  .pills { display:flex; gap:10px; flex-wrap:wrap; }
+  .pill { background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:10px; padding:10px 20px; text-align:center; min-width:90px; }
+  .pill-label { font-size:11px; font-weight:700; color:#2563eb; text-transform:uppercase; letter-spacing:0.5px; }
+  .pill-val { font-size:26px; font-weight:900; color:#1a202c; line-height:1.1; }
+  .note { margin-top:10px; font-size:14px; color:#4b5563; background:#f9fafb; border-right:3px solid #2563eb; padding:8px 12px; border-radius:4px; white-space:pre-wrap; }
+  @media(max-width:500px){
+    .img-wrap{width:110px;}
+    .ex-name{font-size:16px;}
+    .pill-val{font-size:20px;}
+    .row{padding:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <h1>תוכנית אימונים</h1>
+    <p>${name}</p>
+  </div>
+  <div class="body">${rows}</div>
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `תוכנית-${name}.html`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
