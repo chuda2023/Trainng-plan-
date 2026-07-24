@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>מעקב אימונים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d1210;
+    --bg-elev: #141b18;
+    --bg-card: #1a2320;
+    --line: #263029;
+    --line-soft: #1f2822;
+    --text: #eef4f0;
+    --text-dim: #8ea198;
+    --text-faint: #5c6d64;
+    --accent: #3ddc97;
+    --accent-dim: #2a9c6c;
+    --accent-glow: rgba(61,220,151,0.16);
+    --warn: #ff8a5c;
+    --a-color: #3ddc97;
+    --b-color: #ff8a5c;
+    --radius: 14px;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: radial-gradient(circle at 50% 0%, #16201b 0%, #0d1210 55%);
+    color: var(--text);
+    font-family: 'Rubik', system-ui, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  h1,h2,h3, .num{ font-family:'Oswald', 'Rubik', sans-serif; }
+  .app{ max-width: 520px; margin: 0 auto; padding: 18px 16px 10px; }
+
+  /* Top bar */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding: 6px 2px 22px; }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{ width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg, var(--accent), var(--accent-dim)); display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:700; color:#08130e; font-size:16px; flex-shrink:0; }
+  .brand-text{ font-size:13px; color:var(--text-dim); letter-spacing:.2px; }
+  .brand-text b{ color:var(--text); font-size:15px; display:block; }
+  .icon-btn{ background:var(--bg-elev); border:1px solid var(--line); color:var(--text-dim); width:38px;height:38px;border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .icon-btn:active{ transform:scale(.94); }
+
+  /* Screens */
+  .screen{ display:none; }
+  .screen.active{ display:block; animation: fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* Home: workout picker */
+  .hero{ margin-bottom: 22px; }
+  .hero h1{ font-size:26px; margin:0 0 4px; font-weight:700; letter-spacing:.3px; }
+  .hero p{ margin:0; color:var(--text-dim); font-size:14px; line-height:1.5; }
+
+  .picker{ display:flex; flex-direction:column; gap:14px; }
+  .workout-card{
+    position:relative; overflow:hidden;
+    border-radius: 18px; border:1px solid var(--line);
+    background: linear-gradient(160deg, var(--bg-card) 0%, var(--bg-elev) 100%);
+    padding: 22px 20px; cursor:pointer; text-align:right;
+  }
+  .workout-card:active{ transform: scale(.98); }
+  .workout-card::before{
+    content:''; position:absolute; inset-inline-end:-30px; top:-30px; width:130px; height:130px; border-radius:50%;
+    background: radial-gradient(circle, var(--wc-color, var(--accent)) 0%, transparent 70%); opacity:.25;
+  }
+  .wc-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .wc-letter{ font-family:'Oswald'; font-weight:700; font-size:34px; color: var(--wc-color, var(--accent)); line-height:1; }
+  .wc-count{ font-size:12px; color:var(--text-dim); background:rgba(255,255,255,0.04); border:1px solid var(--line); padding:5px 10px; border-radius:20px; }
+  .wc-name{ font-size:18px; font-weight:600; margin-bottom:4px; }
+  .wc-sub{ font-size:13px; color:var(--text-faint); }
+
+  .footer-note{ text-align:center; color:var(--text-faint); font-size:11.5px; margin-top:26px; line-height:1.7; }
+
+  /* Workout detail screen */
+  .wo-header{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .back-btn{ background:var(--bg-elev); border:1px solid var(--line); color:var(--text); width:38px;height:38px;border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .back-btn:active{ transform:scale(.92); }
+  .wo-title-wrap{ flex:1; }
+  .wo-title{ font-size:21px; font-weight:700; margin:0; }
+  .wo-title .tag{ font-size:12px; color:var(--text-dim); font-weight:400; margin-inline-start:6px; }
+  .edit-toggle{ font-size:12.5px; color: var(--text-dim); background:var(--bg-elev); border:1px solid var(--line); padding:7px 12px; border-radius:10px; cursor:pointer; white-space:nowrap; }
+  .edit-toggle.on{ background:var(--accent-glow); color:var(--accent); border-color:var(--accent-dim); }
+
+  .exercise-list{ display:flex; flex-direction:column; gap:12px; }
+
+  .ex-card{ background:var(--bg-card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+  .ex-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .ex-name{ font-size:16.5px; font-weight:600; margin:0 0 3px; }
+  .ex-meta{ font-size:12.5px; color:var(--text-dim); }
+  .ex-drag{ color: var(--text-faint); font-size:11px; }
+  .ex-del{ background:none; border:none; color:#c96a55; font-size:18px; cursor:pointer; padding:2px 6px; flex-shrink:0; }
+
+  .ex-edit-fields{ display:flex; gap:8px; margin-top:10px; }
+  .ex-edit-fields input{ flex:1; min-width:0; }
+  .field-name{ flex:2 !important; }
+
+  input, select{
+    background: var(--bg-elev); border:1px solid var(--line); color:var(--text);
+    border-radius:9px; padding:9px 10px; font-size:14px; font-family:inherit; width:100%;
+  }
+  input:focus, select:focus{ outline:none; border-color: var(--accent-dim); }
+  input[type=number]{ text-align:center; }
+
+  .sets-row{ display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+  .set-box{ flex:1; min-width:64px; text-align:center; }
+  .set-label{ font-size:10.5px; color:var(--text-faint); margin-bottom:4px; display:block; }
+  .set-input{ text-align:center; font-weight:600; font-size:15px; padding:10px 4px; }
+
+  .log-btn{
+    margin-top:12px; width:100%; padding:11px; border-radius:10px; border:none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dim)); color:#07160f;
+    font-weight:700; font-size:14px; cursor:pointer; font-family:'Rubik';
+  }
+  .log-btn:active{ transform: scale(.98); }
+  .log-btn.saved{ background: var(--bg-elev); color:var(--text-dim); border:1px solid var(--line); }
+
+  .last-log{ font-size:12px; color:var(--text-faint); margin-top:8px; }
+  .last-log b{ color:var(--text-dim); }
+
+  /* chart */
+  .chart-wrap{ margin-top:12px; border-top:1px dashed var(--line-soft); padding-top:12px; }
+  .chart-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .chart-head span{ font-size:11.5px; color:var(--text-faint); }
+  .chart-delta{ font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-glow); padding:3px 9px; border-radius:20px; }
+  .chart-delta.neg{ color:var(--warn); background:rgba(255,138,92,0.12); }
+  .chart-empty{ font-size:12px; color:var(--text-faint); padding:14px 0; text-align:center; }
+  svg.chart{ display:block; width:100%; height:auto; }
+
+  .add-ex-btn{
+    margin-top:4px; padding:14px; border-radius:14px; border:1.5px dashed var(--line);
+    background:transparent; color:var(--text-dim); font-size:14px; cursor:pointer; width:100%; font-family:'Rubik';
+  }
+  .add-ex-btn:active{ transform:scale(.98); }
+
+  /* modal / settings sheet */
+  .sheet-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:flex-end; justify-content:center; z-index:50; }
+  .sheet-backdrop.show{ display:flex; }
+  .sheet{ background:var(--bg-elev); border-radius:20px 20px 0 0; width:100%; max-width:520px; padding:20px 18px 26px; border-top:1px solid var(--line); }
+  .sheet h3{ margin:0 0 14px; font-size:16px; }
+  .sheet-row{ display:flex; gap:10px; margin-bottom:10px; }
+  .sheet-btn{ flex:1; background:var(--bg-card); border:1px solid var(--line); color:var(--text); padding:12px; border-radius:11px; font-size:13.5px; cursor:pointer; font-family:'Rubik'; text-align:center; }
+  .sheet-btn.primary{ background: var(--accent); color:#07160f; font-weight:700; border:none; }
+  .sheet-close{ text-align:center; color:var(--text-faint); font-size:13px; margin-top:8px; cursor:pointer; padding:8px; }
+  #importFile{ display:none; }
+
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--bg-elev); border:1px solid var(--accent-dim); color:var(--text); padding:10px 18px; border-radius:30px; font-size:13px; z-index:60; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">כ</div>
+      <div class="brand-text"><b>מעקב אימונים</b>המשקלים שלך, מתועדים</div>
+    </div>
+    <div class="icon-btn" id="settingsBtn" title="גיבוי ושחזור">⋮</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <h1>איזה אימון היום?</h1>
+      <p>בחר/י A או B כדי לראות את התרגילים ולרשום את המשקל של היום.</p>
+    </div>
+    <div class="picker">
+      <div class="workout-card" style="--wc-color: var(--a-color)" onclick="openWorkout('A')">
+        <div class="wc-top">
+          <div class="wc-letter">A</div>
+          <div class="wc-count" id="countA">0 תרגילים</div>
+        </div>
+        <div class="wc-name">אימון A</div>
+        <div class="wc-sub">הקבוצה הראשונה של התרגילים</div>
+      </div>
+      <div class="workout-card" style="--wc-color: var(--b-color)" onclick="openWorkout('B')">
+        <div class="wc-top">
+          <div class="wc-letter">B</div>
+          <div class="wc-count" id="countB">0 תרגילים</div>
+        </div>
+        <div class="wc-name">אימון B</div>
+        <div class="wc-sub">הקבוצה השנייה של התרגילים</div>
+      </div>
+    </div>
+    <div class="footer-note">כל הנתונים נשמרים רק על המכשיר שלך.<br>אפשר להוסיף לעמוד הבית לגישה מהירה 📲</div>
+  </div>
+
+  <!-- WORKOUT DETAIL (template used for A and B) -->
+  <div class="screen" id="screen-workout">
+    <div class="wo-header">
+      <div class="back-btn" onclick="goHome()">→</div>
+      <div class="wo-title-wrap">
+        <h2 class="wo-title" id="woTitle">אימון A</h2>
+      </div>
+      <div class="edit-toggle" id="editToggle" onclick="toggleEdit()">✎ עריכה</div>
+    </div>
+    <div class="exercise-list" id="exerciseList"></div>
+    <button class="add-ex-btn" id="addExBtn" style="display:none" onclick="addExercise()">+ הוספת תרגיל</button>
+  </div>
+
+</div>
+
+<!-- settings sheet -->
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet">
+    <h3>גיבוי ושחזור נתונים</h3>
+    <div class="sheet-row">
+      <div class="sheet-btn primary" onclick="exportData()">⬇ ייצוא גיבוי (JSON)</div>
+    </div>
+    <div class="sheet-row">
+      <div class="sheet-btn" onclick="document.getElementById('importFile').click()">⬆ ייבוא / שחזור</div>
+    </div>
+    <input type="file" id="importFile" accept="application/json">
+    <div class="sheet-close" onclick="closeSheet()">סגירה</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- Data model ----------------
+STORAGE_KEY -> {
+  A: { exercises: [ {id,name,sets,reps, logs:[{date, weights:[..]}]} ] },
+  B: { exercises: [ ... ] }
+}
+------------------------------------------------ */
+const STORAGE_KEY = 'workoutTrackerData_trainee2_v1';
+
+const DEFAULT_DATA = {
+  A: { exercises: [
+    { id: uid(), name: 'סקוואט מוט (5 קפיצות על ארגז)', sets: 4, reps: '6', logs: [] },
+    { id: uid(), name: 'מכרע בולגרי (ריאקטיביות על משקולת קדימה ואחורה מהר)', sets: 3, reps: '7', logs: [] },
+    { id: uid(), name: 'דדליפט על רגל אחת (קפיצות סקי מצד לצד)', sets: 3, reps: '8', logs: [] },
+    { id: uid(), name: 'פשיטת ברכיים מכונה', sets: 3, reps: '15', logs: [] },
+    { id: uid(), name: 'לחיצת כתפיים עם משקולות', sets: 4, reps: '9', logs: [] },
+    { id: uid(), name: 'הרחקת כתפיים', sets: 3, reps: '10', logs: [] },
+  ]},
+  B: { exercises: [
+    { id: uid(), name: 'לחיצת חזה מכונה ישיבה', sets: 4, reps: '9', logs: [] },
+    { id: uid(), name: 'לחיצת חזה שיפוע חיובי בסמית', sets: 3, reps: '10', logs: [] },
+    { id: uid(), name: 'חתירה T-bar', sets: 4, reps: '8', logs: [] },
+    { id: uid(), name: 'משיכה עליונה', sets: 3, reps: '9', logs: [] },
+    { id: uid(), name: 'הרחקת אופקית בשכיבה', sets: 3, reps: '12', logs: [] },
+    { id: uid(), name: 'יד קדמית כומר', sets: 4, reps: '11', logs: [] },
+    { id: uid(), name: 'יד אחורית', sets: 4, reps: '12', logs: [] },
+  ]},
+};
+
+function uid(){ return 'x' + Math.random().toString(36).slice(2,10); }
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return structuredClone(DEFAULT_DATA);
+    const parsed = JSON.parse(raw);
+    if(!parsed.A || !parsed.B) return structuredClone(DEFAULT_DATA);
+    return parsed;
+  }catch(e){ return structuredClone(DEFAULT_DATA); }
+}
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+let data = loadData();
+let currentWorkout = null; // 'A' | 'B'
+let editMode = false;
+
+function todayStr(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('he-IL', { day:'2-digit', month:'2-digit' });
+}
+
+/* ---------------- Navigation ---------------- */
+function goHome(){
+  document.getElementById('screen-workout').classList.remove('active');
+  document.getElementById('screen-home').classList.add('active');
+  currentWorkout = null;
+  editMode = false;
+  renderHomeCounts();
+}
+function openWorkout(letter){
+  currentWorkout = letter;
+  editMode = false;
+  document.getElementById('screen-home').classList.remove('active');
+  document.getElementById('screen-workout').classList.add('active');
+  document.getElementById('woTitle').textContent = 'אימון ' + letter;
+  document.getElementById('editToggle').classList.remove('on');
+  document.getElementById('editToggle').textContent = '✎ עריכה';
+  document.getElementById('addExBtn').style.display = 'none';
+  renderExercises();
+}
+function toggleEdit(){
+  editMode = !editMode;
+  const btn = document.getElementById('editToggle');
+  btn.classList.toggle('on', editMode);
+  btn.textContent = editMode ? '✓ סיום עריכה' : '✎ עריכה';
+  document.getElementById('addExBtn').style.display = editMode ? 'block' : 'none';
+  renderExercises();
+}
+function renderHomeCounts(){
+  document.getElementById('countA').textContent = data.A.exercises.length + ' תרגילים';
+  document.getElementById('countB').textContent = data.B.exercises.length + ' תרגילים';
+}
+
+/* ---------------- Rendering exercises ---------------- */
+function renderExercises(){
+  const list = document.getElementById('exerciseList');
+  const exs = data[currentWorkout].exercises;
+  list.innerHTML = '';
+
+  if(exs.length === 0){
+    list.innerHTML = '<div class="chart-empty">אין עדיין תרגילים באימון הזה' + (editMode ? '' : ' — הפעל/י עריכה כדי להוסיף') + '</div>';
+    return;
+  }
+
+  exs.forEach(ex => {
+    const card = document.createElement('div');
+    card.className = 'ex-card';
+
+    if(editMode){
+      card.innerHTML = `
+        <div class="ex-head">
+          <div style="flex:1">
+            <div class="ex-edit-fields">
+              <input class="field-name" type="text" value="${escapeHtml(ex.name)}" onchange="updateExercise('${ex.id}','name',this.value)" placeholder="שם התרגיל">
+              <input type="number" min="1" value="${ex.sets}" onchange="updateExercise('${ex.id}','sets',this.value)" title="סטים">
+              <input type="text" inputmode="numeric" value="${escapeHtml(ex.reps)}" onchange="updateExercise('${ex.id}','reps',this.value)" title="חזרות" placeholder="חזרות">
+            </div>
+          </div>
+          <button class="ex-del" onclick="deleteExercise('${ex.id}')">✕</button>
+        </div>
+        <div class="ex-meta">סטים · חזרות</div>
+      `;
+      list.appendChild(card);
+      return;
+    }
+
+    const lastLog = ex.logs[ex.logs.length - 1];
+    const setsInputs = Array.from({length: ex.sets}).map((_, i) => {
+      const prefill = lastLog && lastLog.weights[i] != null ? lastLog.weights[i] : '';
+      return `<div class="set-box">
+        <span class="set-label">סט ${i+1}</span>
+        <input class="set-input" type="number" inputmode="decimal" placeholder="קג" data-ex="${ex.id}" data-set="${i}" value="">
+      </div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="ex-head">
+        <div>
+          <div class="ex-name">${escapeHtml(ex.name)}</div>
+          <div class="ex-meta">${ex.sets} סטים × ${ex.reps} חזרות</div>
+        </div>
+      </div>
+      <div class="sets-row">${setsInputs}</div>
+      ${lastLog ? `<div class="last-log">רישום אחרון (${fmtDate(lastLog.date)}): <b>${lastLog.weights.filter(w=>w!=null).join(' / ')} ק"ג</b></div>` : ''}
+      <button class="log-btn" onclick="logWeights('${ex.id}', this)">💾 שמירת משקל היום</button>
+      <div class="chart-wrap">
+        <div class="chart-head">
+          <span>התקדמות המשקל</span>
+          ${renderDeltaBadge(ex)}
+        </div>
+        ${renderChart(ex)}
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- Edit operations ---------------- */
+function updateExercise(id, field, value){
+  const ex = data[currentWorkout].exercises.find(e => e.id === id);
+  if(!ex) return;
+  if(field === 'sets'){
+    value = Math.max(1, parseInt(value) || 1);
+  }
+  ex[field] = value;
+  saveData();
+}
+function deleteExercise(id){
+  if(!confirm('למחוק את התרגיל? כל היסטוריית המשקלים שלו תימחק.')) return;
+  data[currentWorkout].exercises = data[currentWorkout].exercises.filter(e => e.id !== id);
+  saveData();
+  renderExercises();
+}
+function addExercise(){
+  data[currentWorkout].exercises.push({ id: uid(), name: 'תרגיל חדש', sets: 3, reps: 10, logs: [] });
+  saveData();
+  renderExercises();
+}
+
+/* ---------------- Logging weights ---------------- */
+function logWeights(exId, btn){
+  const ex = data[currentWorkout].exercises.find(e => e.id === exId);
+  if(!ex) return;
+  const inputs = document.querySelectorAll(`input[data-ex="${exId}"]`);
+  const weights = [];
+  let any = false;
+  inputs.forEach(inp => {
+    const v = inp.value.trim();
+    if(v !== ''){ any = true; weights.push(parseFloat(v)); }
+    else weights.push(null);
+  });
+  if(!any){ showToast('נא להזין לפחות משקל אחד'); return; }
+
+  const today = todayStr();
+  const existingIdx = ex.logs.findIndex(l => l.date === today);
+  if(existingIdx >= 0){ ex.logs[existingIdx].weights = weights; }
+  else { ex.logs.push({ date: today, weights }); }
+
+  saveData();
+  showToast('נשמר ✓');
+  renderExercises();
+}
+
+/* ---------------- Progress chart (inline SVG, no deps) ---------------- */
+function sessionTopWeight(log){
+  const vals = log.weights.filter(w => w != null && !isNaN(w));
+  return vals.length ? Math.max(...vals) : null;
+}
+
+function renderDeltaBadge(ex){
+  const points = ex.logs.map(sessionTopWeight).filter(v => v != null);
+  if(points.length < 2) return '';
+  const delta = points[points.length - 1] - points[0];
+  const sign = delta >= 0 ? '+' : '';
+  const cls = delta < 0 ? 'neg' : '';
+  return `<span class="chart-delta ${cls}">${sign}${delta.toFixed(1)} ק"ג</span>`;
+}
+
+function renderChart(ex){
+  const pts = ex.logs
+    .map(l => ({ date: l.date, w: sessionTopWeight(l) }))
+    .filter(p => p.w != null);
+
+  if(pts.length === 0){
+    return '<div class="chart-empty">עדיין אין נתוני משקל להצגה</div>';
+  }
+  if(pts.length === 1){
+    return `<div class="chart-empty">נקודת התחלה: <b style="color:var(--text)">${pts[0].w} ק"ג</b> ב-${fmtDate(pts[0].date)}. עוד רישום אחד ותתחיל להופיע גרף.</div>`;
+  }
+
+  const W = 460, H = 130, padX = 8, padY = 18;
+  const ws = pts.map(p => p.w);
+  let min = Math.min(...ws), max = Math.max(...ws);
+  if(min === max){ min -= 5; max += 5; }
+  const rangeW = max - min;
+
+  const stepX = (W - padX*2) / (pts.length - 1);
+  const coords = pts.map((p, i) => {
+    const x = padX + i * stepX;
+    const y = padY + (H - padY*2) * (1 - (p.w - min) / rangeW);
+    return { x, y, w: p.w, date: p.date };
+  });
+
+  const linePath = coords.map((c, i) => (i === 0 ? 'M' : 'L') + c.x.toFixed(1) + ',' + c.y.toFixed(1)).join(' ');
+  const areaPath = linePath + ` L${coords[coords.length-1].x.toFixed(1)},${H-padY} L${coords[0].x.toFixed(1)},${H-padY} Z`;
+
+  const dots = coords.map((c, i) => {
+    const isLast = i === coords.length - 1;
+    const isFirst = i === 0;
+    return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isLast || isFirst ? 4 : 2.5}" fill="${isLast ? 'var(--accent)' : '#1a2320'}" stroke="var(--accent)" stroke-width="1.6" />` +
+      (isFirst || isLast ? `<text x="${c.x.toFixed(1)}" y="${(c.y - 9).toFixed(1)}" font-size="10.5" fill="#8ea198" text-anchor="middle" font-family="Rubik">${c.w}</text>` : '');
+  }).join('');
+
+  const gradId = 'grad' + ex.id;
+
+  return `
+    <svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3ddc97" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#3ddc97" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#${gradId})" stroke="none"/>
+      <path d="${linePath}" fill="none" stroke="#3ddc97" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dots}
+    </svg>
+    <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-faint); margin-top:2px;">
+      <span>${fmtDate(pts[0].date)}</span>
+      <span>${fmtDate(pts[pts.length-1].date)}</span>
+    </div>
+  `;
+}
+
+/* ---------------- Settings sheet: backup / restore ---------------- */
+function openSheet(){ document.getElementById('sheetBackdrop').classList.add('show'); }
+function closeSheet(){ document.getElementById('sheetBackdrop').classList.remove('show'); }
+document.getElementById('settingsBtn').onclick = openSheet;
+document.getElementById('sheetBackdrop').onclick = (e) => { if(e.target.id === 'sheetBackdrop') closeSheet(); };
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'workout-backup-' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  closeSheet();
+  showToast('הגיבוי הורד ✓');
+}
+document.getElementById('importFile').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      if(!parsed.A || !parsed.B) throw new Error('bad format');
+      data = parsed;
+      saveData();
+      closeSheet();
+      showToast('הנתונים שוחזרו ✓');
+      if(currentWorkout) renderExercises(); else renderHomeCounts();
+    }catch(err){
+      alert('קובץ לא תקין. נא לבחור קובץ גיבוי JSON שהופק מהאפליקציה הזו.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---------------- Toast ---------------- */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ---------------- Init ---------------- */
+renderHomeCounts();
+</script>
+</body>
+</html>
