@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chuda">
+<meta name="theme-color" content="#FAF6F0">
+<title>CHUDA · יומן אימונים</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2314120F'/%3E%3Cpath d='M50 18c8 12-6 16-4 28 1 7 8 10 8 10s10-6 8-18c9 6 12 18 6 28-6 10-20 14-30 8-10-6-14-20-8-30 4-7 12-11 12-11s6-9-4-11c4-3 8-4 12-4z' fill='%23FF6B35'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2314120F'/%3E%3Cpath d='M50 18c8 12-6 16-4 28 1 7 8 10 8 10s10-6 8-18c9 6 12 18 6 28-6 10-20 14-30 8-10-6-14-20-8-30 4-7 12-11 12-11s6-9-4-11c4-3 8-4 12-4z' fill='%23FF6B35'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF6F0;
+    --surface:#FFFFFF;
+    --surface-2:#F2EBE0;
+    --line:#E6DCCC;
+    --flame:#FF6B35;
+    --amber:#C97A16;
+    --money:#1E9A5A;
+    --text:#2A2420;
+    --muted:#8A8071;
+    --danger:#D6412C;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Assistant',sans-serif;
+    overflow-x:hidden;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  }
+  h1,h2,h3,.display{font-family:'Rubik',sans-serif;}
+  button{font-family:inherit; color:inherit; cursor:pointer;}
+  input{font-family:inherit; color:inherit;}
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(180deg, var(--bg) 80%, rgba(250,246,240,0));
+    padding:calc(14px + env(safe-area-inset-top)) 16px 10px;
+  }
+  .brand{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .brand-name{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Rubik',sans-serif; font-weight:800; font-size:20px; letter-spacing:0.5px;
+  }
+  .flame{color:var(--flame); font-size:20px;}
+  .icon-btn{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+    font-size:16px;
+  }
+  .icon-btn:active{background:var(--surface-2);}
+
+  .week-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:8px 10px; margin-bottom:12px;
+  }
+  .week-nav button{
+    background:var(--surface-2); border:none; border-radius:10px;
+    width:34px; height:34px; font-size:16px; color:var(--text);
+  }
+  .week-label{text-align:center; flex:1;}
+  .week-label .range{font-weight:700; font-size:14px;}
+  .week-label .today-link{font-size:11px; color:var(--amber); margin-top:2px; display:block;}
+
+  .revenue-chip{
+    display:flex; align-items:center; justify-content:space-between;
+    background:linear-gradient(135deg, rgba(255,107,53,0.14), rgba(255,178,56,0.05));
+    border:1px solid rgba(255,107,53,0.35); border-radius:16px;
+    padding:12px 14px; cursor:pointer;
+  }
+  .revenue-chip .rc-label{font-size:12px; color:var(--muted);}
+  .revenue-chip .rc-amount{font-family:'Rubik',sans-serif; font-weight:800; font-size:22px; color:var(--money);}
+  .revenue-chip .rc-arrow{color:var(--muted); font-size:12px;}
+
+  /* ---------- Day tabs ---------- */
+  .day-tabs{
+    display:flex; gap:6px; padding:12px 16px 6px; overflow-x:auto;
+  }
+  .day-tab{
+    flex:1; min-width:42px; text-align:center; background:var(--surface);
+    border:1px solid var(--line); border-radius:12px; padding:8px 2px;
+  }
+  .day-tab .dname{font-size:11px; color:var(--muted);}
+  .day-tab .dnum{font-family:'Rubik',sans-serif; font-weight:700; font-size:15px; margin-top:2px;}
+  .day-tab.active{background:var(--flame); border-color:var(--flame);}
+  .day-tab.active .dname{color:rgba(20,18,15,0.75);}
+  .day-tab.active .dnum{color:#14120F;}
+  .day-tab.today:not(.active){border-color:var(--amber);}
+  .day-tab .dcount{font-size:10px; color:var(--money); margin-top:2px; height:12px;}
+  .day-tab.active .dcount{color:rgba(20,18,15,0.7);}
+
+  /* ---------- Slots ---------- */
+  main{padding:12px 16px 40px;}
+  .slot{
+    display:flex; align-items:center; gap:10px;
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:8px;
+  }
+  .slot.filled{border-color:rgba(255,107,53,0.4); background:linear-gradient(135deg, rgba(255,107,53,0.10), var(--surface) 60%);}
+  .slot-time{
+    font-family:'Rubik',sans-serif; font-weight:700; font-size:14px; color:var(--muted);
+    min-width:48px;
+  }
+  .slot.filled .slot-time{color:var(--amber);}
+  .slot-body{flex:1; min-width:0;}
+  .slot-empty-btn{
+    width:100%; text-align:right; background:none; border:none; color:var(--muted);
+    font-size:14px; padding:6px 0;
+  }
+  .slot.filled .slot-empty-btn{display:none;}
+  .slot-filled-info{display:none;}
+  .slot.filled .slot-filled-info{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .trainee-name{font-weight:700; font-size:15px;}
+  .slot-price{font-size:12px; color:var(--money); margin-top:1px;}
+  .slot-actions{display:flex; gap:6px;}
+  .mini-btn{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:9px;
+    width:30px; height:30px; font-size:13px; display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- Bottom sheet / modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(10,9,7,0.6); backdrop-filter:blur(2px);
+    display:none; align-items:flex-end; z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .sheet{
+    background:var(--surface); width:100%; max-height:85vh;
+    border-radius:22px 22px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; animation:slideup .2s ease-out;
+    border-top:1px solid var(--line);
+  }
+  @keyframes slideup{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet-handle{width:36px; height:4px; background:var(--line); border-radius:2px; margin:0 auto 12px;}
+  .sheet-title{font-family:'Rubik',sans-serif; font-weight:700; font-size:17px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;}
+  .sheet-close{background:var(--surface-2); border:none; border-radius:10px; width:30px; height:30px; color:var(--muted);}
+  .search-input{
+    width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:12px;
+    padding:11px 12px; font-size:15px; margin-bottom:10px;
+  }
+  .search-input::placeholder{color:var(--muted);}
+  .trainee-list{overflow-y:auto; flex:1;}
+  .trainee-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 10px; border-bottom:1px solid var(--line);
+  }
+  .trainee-row:active{background:var(--surface-2);}
+  .trainee-row .tr-name{font-weight:600; font-size:15px;}
+  .trainee-row .tr-price{font-size:12px; color:var(--money); margin-top:2px;}
+  .empty-note{color:var(--muted); font-size:13px; text-align:center; padding:24px 0;}
+  .clear-btn{
+    margin-top:10px; width:100%; background:rgba(240,85,61,0.12); color:var(--danger);
+    border:1px solid rgba(240,85,61,0.35); border-radius:12px; padding:12px; font-weight:700; font-size:14px;
+  }
+
+  /* trainee management */
+  .add-trainee-row{display:flex; gap:8px; margin-bottom:12px;}
+  .add-trainee-row input{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:10px;
+    font-size:14px;
+  }
+  .add-trainee-row input.name-input{flex:2; min-width:0;}
+  .add-trainee-row input.price-input{flex:1; min-width:0;}
+  .add-trainee-row button{
+    background:var(--flame); border:none; border-radius:12px; padding:0 14px;
+    font-weight:700; color:#14120F; font-size:20px; line-height:1;
+  }
+  .client-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:14px; margin-bottom:10px;
+  }
+  .client-card-top{display:flex; align-items:center; gap:8px;}
+  .client-card-top .tr-name{flex:1; font-weight:700; font-size:16px; font-family:'Rubik',sans-serif;}
+  .client-card-price{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--muted);}
+  .client-card-price input.price-edit{
+    width:60px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px;
+    padding:6px; font-size:13px; text-align:center; font-weight:700; color:var(--text);
+  }
+  .client-card .del-btn{
+    background:none; border:none; color:var(--danger); font-size:16px; padding:4px 6px;
+  }
+  .debt-status{
+    margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .debt-line{font-size:13px; font-weight:600;}
+  .debt-line.in-debt{color:var(--danger);}
+  .debt-line.clear{color:var(--money);}
+  .mark-paid-btn{
+    background:rgba(30,154,90,0.10); color:var(--money); border:1px solid rgba(30,154,90,0.35);
+    border-radius:9px; padding:7px 10px; font-size:12px; font-weight:700; white-space:nowrap;
+  }
+
+  .paid-toggle{
+    background:none; border:none; text-align:right; flex:1; min-width:0; padding:0;
+  }
+  .slot.paid{opacity:0.7;}
+  .slot-count-badge{
+    font-size:10.5px; border-radius:7px; padding:1px 6px; margin-top:3px; display:inline-block; font-weight:700;
+  }
+  .slot-count-badge.is-unpaid{color:var(--danger); background:rgba(214,65,44,0.10); border:1px solid rgba(214,65,44,0.3);}
+  .slot-count-badge.is-paid{color:var(--money); background:rgba(30,154,90,0.10); border:1px solid rgba(30,154,90,0.3);}
+
+  /* report */
+  .report-total{
+    text-align:center; padding:16px 0; border-bottom:1px solid var(--line); margin-bottom:10px;
+  }
+  .report-total .amt{font-family:'Rubik',sans-serif; font-weight:800; font-size:30px; color:var(--money);}
+  .report-total .lbl{font-size:12px; color:var(--muted); margin-top:2px;}
+  .report-toggle{display:flex; background:var(--surface-2); border-radius:12px; padding:3px; margin-bottom:14px;}
+  .report-toggle button{
+    flex:1; background:none; border:none; padding:9px; border-radius:9px; font-size:13px; color:var(--muted); font-weight:600;
+  }
+  .report-toggle button.active{background:var(--flame); color:#14120F;}
+  .breakdown-row{
+    display:flex; justify-content:space-between; padding:10px 4px; border-bottom:1px solid var(--line);
+    font-size:14px;
+  }
+  .breakdown-row .b-amt{color:var(--money); font-weight:700;}
+
+  .info-note{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin:0 16px 12px; font-size:12.5px; color:var(--muted); line-height:1.6;
+  }
+  .info-note b{color:var(--amber);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-name"><span class="flame">🔥</span> CHUDA</div>
+    <div style="display:flex; gap:8px;">
+      <button class="icon-btn" id="manageBtn" title="לקוחות">🗂</button>
+      <button class="icon-btn" id="infoBtn" title="מסך הבית">ℹ️</button>
+    </div>
+  </div>
+
+  <div class="week-nav">
+    <button id="prevWeek">◀</button>
+    <div class="week-label">
+      <div class="range" id="weekRange">—</div>
+      <span class="today-link" id="todayLink">חזרה להיום</span>
+    </div>
+    <button id="nextWeek">▶</button>
+  </div>
+
+  <div class="revenue-chip" id="revenueChip">
+    <div>
+      <div class="rc-label" id="rcLabel">הכנסות השבוע</div>
+      <div class="rc-amount" id="rcAmount">₪0</div>
+    </div>
+    <div class="rc-arrow">דוח מלא ›</div>
+  </div>
+
+  <div class="day-tabs" id="dayTabs"></div>
+</header>
+
+<main id="slotsContainer"></main>
+
+<!-- Assign trainee sheet -->
+<div class="overlay" id="assignOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="assignTitle">שיבוץ מתאמן</span>
+      <button class="sheet-close" data-close="assignOverlay">✕</button>
+    </div>
+    <input type="text" class="search-input" id="traineeSearch" placeholder="חיפוש מתאמן...">
+    <div class="trainee-list" id="assignList"></div>
+    <button class="clear-btn" id="clearSlotBtn" style="display:none;">הסר שיבוץ</button>
+  </div>
+</div>
+
+<!-- Manage trainees sheet -->
+<div class="overlay" id="manageOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span>לקוחות</span>
+      <button class="sheet-close" data-close="manageOverlay">✕</button>
+    </div>
+    <div class="add-trainee-row">
+      <input type="text" class="name-input" id="newTraineeName" placeholder="שם מתאמן">
+      <input type="number" class="price-input" id="newTraineePrice" placeholder="מחיר ₪">
+      <button id="addTraineeBtn">+</button>
+    </div>
+    <input type="text" class="search-input" id="clientSearch" placeholder="חיפוש לקוח...">
+    <div class="trainee-list" id="manageList"></div>
+  </div>
+</div>
+
+<!-- Report sheet -->
+<div class="overlay" id="reportOverlay">
+  <div class="sheet" style="max-height:88vh;">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span>דוח הכנסות</span>
+      <button class="sheet-close" data-close="reportOverlay">✕</button>
+    </div>
+    <div class="report-toggle">
+      <button id="repWeekBtn" class="active">השבוע</button>
+      <button id="repMonthBtn">החודש</button>
+    </div>
+    <div class="report-total">
+      <div class="amt" id="reportAmt">₪0</div>
+      <div class="lbl" id="reportLbl">סה"כ השבוע</div>
+    </div>
+    <div class="trainee-list" id="reportBreakdown"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- storage ---------------- */
+  const LS_TRAINEES = "chuda_trainees_v1";
+  const LS_SESSIONS = "chuda_sessions_v1";
+
+  function loadTrainees(){
+    try{ return JSON.parse(localStorage.getItem(LS_TRAINEES)) || []; }catch(e){ return []; }
+  }
+  function saveTrainees(list){ localStorage.setItem(LS_TRAINEES, JSON.stringify(list)); }
+
+  function loadSessions(){
+    try{ return JSON.parse(localStorage.getItem(LS_SESSIONS)) || {}; }catch(e){ return {}; }
+  }
+  function saveSessions(obj){ localStorage.setItem(LS_SESSIONS, JSON.stringify(obj)); }
+
+  let trainees = loadTrainees();
+  let sessions = loadSessions(); // key: "YYYY-MM-DD_H" -> {tid, paid}
+
+  // migrate old format (value was a plain traineeId string) to {tid, paid}
+  (function migrateSessions(){
+    let changed = false;
+    Object.keys(sessions).forEach(k=>{
+      if(typeof sessions[k] === "string"){
+        sessions[k] = { tid: sessions[k], paid:false };
+        changed = true;
+      }
+    });
+    if(changed) saveSessions(sessions);
+  })();
+
+  function sessionTid(key){
+    const s = sessions[key];
+    return s ? s.tid : null;
+  }
+  function sessionPaid(key){
+    const s = sessions[key];
+    return s ? !!s.paid : false;
+  }
+
+  /* ---------------- date helpers ---------------- */
+  const HE_DAYS = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+  const HE_MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  const HOURS = []; // 5..19 start hours (15 slots, ending 20:00)
+  for(let h=5; h<=19; h++) HOURS.push(h);
+
+  function toISODate(d){
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function startOfWeek(d){
+    const nd = new Date(d);
+    nd.setHours(0,0,0,0);
+    nd.setDate(nd.getDate() - nd.getDay()); // Sunday
+    return nd;
+  }
+  function addDays(d, n){
+    const nd = new Date(d);
+    nd.setDate(nd.getDate()+n);
+    return nd;
+  }
+  function sameDate(a,b){
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+
+  let today = new Date();
+  let currentWeekStart = startOfWeek(today);
+  let selectedDate = new Date(today); selectedDate.setHours(0,0,0,0);
+
+  /* ---------------- state for sheets ---------------- */
+  let pendingSlotKey = null; // for assign sheet
+
+  /* ---------------- rendering ---------------- */
+  const weekRangeEl = document.getElementById("weekRange");
+  const dayTabsEl = document.getElementById("dayTabs");
+  const slotsContainer = document.getElementById("slotsContainer");
+  const rcAmount = document.getElementById("rcAmount");
+  const rcLabel = document.getElementById("rcLabel");
+
+  function traineeById(id){ return trainees.find(t=>t.id===id); }
+
+  function renderWeekRange(){
+    const end = addDays(currentWeekStart,6);
+    const s = currentWeekStart, e = end;
+    let txt;
+    if(s.getMonth()===e.getMonth()){
+      txt = s.getDate()+"–"+e.getDate()+" ב"+HE_MONTHS[s.getMonth()];
+    } else {
+      txt = s.getDate()+" ב"+HE_MONTHS[s.getMonth()]+" – "+e.getDate()+" ב"+HE_MONTHS[e.getMonth()];
+    }
+    weekRangeEl.textContent = txt;
+  }
+
+  function dayRevenue(date){
+    const iso = toISODate(date);
+    let sum = 0;
+    HOURS.forEach(h=>{
+      const tid = sessionTid(iso+"_"+h);
+      if(tid){
+        const t = traineeById(tid);
+        if(t) sum += Number(t.price)||0;
+      }
+    });
+    return sum;
+  }
+
+  function weekRevenue(){
+    let sum = 0;
+    for(let i=0;i<7;i++) sum += dayRevenue(addDays(currentWeekStart,i));
+    return sum;
+  }
+
+  function renderDayTabs(){
+    dayTabsEl.innerHTML = "";
+    for(let i=0;i<7;i++){
+      const d = addDays(currentWeekStart,i);
+      const btn = document.createElement("button");
+      btn.className = "day-tab";
+      if(sameDate(d, selectedDate)) btn.className += " active";
+      if(sameDate(d, today)) btn.className += " today";
+      const rev = dayRevenue(d);
+      btn.innerHTML = `<div class="dname">${HE_DAYS[i]}</div><div class="dnum">${d.getDate()}</div><div class="dcount">${rev>0? "₪"+rev : ""}</div>`;
+      btn.addEventListener("click", ()=>{ selectedDate = d; renderAll(); });
+      dayTabsEl.appendChild(btn);
+    }
+  }
+
+  function renderSlots(){
+    slotsContainer.innerHTML = "";
+    const iso = toISODate(selectedDate);
+    HOURS.forEach(h=>{
+      const key = iso+"_"+h;
+      const tid = sessionTid(key);
+      const paid = sessionPaid(key);
+      const t = tid ? traineeById(tid) : null;
+      const row = document.createElement("div");
+      row.className = "slot" + (t ? " filled" : "") + (t && paid ? " paid" : "");
+      const timeLabel = String(h).padStart(2,"0")+":00";
+      row.innerHTML = `
+        <div class="slot-time">${timeLabel}</div>
+        <div class="slot-body">
+          <button class="slot-empty-btn">+ שבץ מתאמן</button>
+          <div class="slot-filled-info">
+            <button class="paid-toggle" title="לחיצה = שולם">
+              <div class="trainee-name">${t? escapeHtml(t.name): ""}</div>
+              <div class="slot-price">₪${t? (Number(t.price)||0):0}</div>
+              <div class="slot-count-badge ${paid? 'is-paid':'is-unpaid'}">${paid? '✓ שולם' : 'לתשלום'}</div>
+            </button>
+            <div class="slot-actions">
+              <button class="mini-btn edit-slot" title="החלף">↺</button>
+            </div>
+          </div>
+        </div>
+      `;
+      row.querySelector(".slot-empty-btn").addEventListener("click", ()=> openAssignSheet(key, timeLabel));
+      const editBtn = row.querySelector(".edit-slot");
+      if(editBtn) editBtn.addEventListener("click", ()=> openAssignSheet(key, timeLabel));
+      const paidBtn = row.querySelector(".paid-toggle");
+      if(paidBtn) paidBtn.addEventListener("click", ()=>{
+        if(!sessions[key]) return;
+        sessions[key].paid = !sessions[key].paid;
+        saveSessions(sessions);
+        renderSlots();
+      });
+      slotsContainer.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function renderRevenueChip(){
+    rcLabel.textContent = "הכנסות השבוע";
+    rcAmount.textContent = "₪"+weekRevenue();
+  }
+
+  function renderAll(){
+    renderWeekRange();
+    renderDayTabs();
+    renderSlots();
+    renderRevenueChip();
+  }
+
+  /* ---------------- week nav ---------------- */
+  document.getElementById("prevWeek").addEventListener("click", ()=>{
+    currentWeekStart = addDays(currentWeekStart,-7);
+    selectedDate = new Date(currentWeekStart);
+    renderAll();
+  });
+  document.getElementById("nextWeek").addEventListener("click", ()=>{
+    currentWeekStart = addDays(currentWeekStart,7);
+    selectedDate = new Date(currentWeekStart);
+    renderAll();
+  });
+  document.getElementById("todayLink").addEventListener("click", ()=>{
+    today = new Date();
+    currentWeekStart = startOfWeek(today);
+    selectedDate = new Date(today); selectedDate.setHours(0,0,0,0);
+    renderAll();
+  });
+
+  /* ---------------- assign sheet ---------------- */
+  const assignOverlay = document.getElementById("assignOverlay");
+  const assignList = document.getElementById("assignList");
+  const assignTitle = document.getElementById("assignTitle");
+  const traineeSearch = document.getElementById("traineeSearch");
+  const clearSlotBtn = document.getElementById("clearSlotBtn");
+
+  function openAssignSheet(key, timeLabel){
+    pendingSlotKey = key;
+    assignTitle.textContent = "שיבוץ · " + timeLabel;
+    traineeSearch.value = "";
+    clearSlotBtn.style.display = sessions[key] ? "block" : "none";
+    renderAssignList("");
+    openOverlay("assignOverlay");
+    setTimeout(()=>traineeSearch.focus(), 200);
+  }
+
+  function computeDebt(traineeId){
+    const t = traineeById(traineeId);
+    const price = t ? (Number(t.price)||0) : 0;
+    let count = 0;
+    Object.values(sessions).forEach(s=>{
+      if(s && s.tid===traineeId && !s.paid) count++;
+    });
+    return { count, sum: count*price };
+  }
+
+  function renderAssignList(filter){
+    assignList.innerHTML = "";
+    const f = filter.trim().toLowerCase();
+    const list = trainees.filter(t=> t.name.toLowerCase().includes(f));
+    if(list.length===0){
+      assignList.innerHTML = `<div class="empty-note">אין מתאמנים תואמים.<br>ניתן להוסיף מתאמנים דרך כפתור 🗂 למעלה.</div>`;
+      return;
+    }
+    list.forEach(t=>{
+      const row = document.createElement("div");
+      row.className = "trainee-row";
+      const debt = computeDebt(t.id);
+      row.innerHTML = `<div><div class="tr-name">${escapeHtml(t.name)}</div><div class="tr-price">₪${Number(t.price)||0} לאימון${debt.count>0 ? ' · בחוב: '+debt.count : ''}</div></div><div style="color:var(--muted);font-size:18px;">›</div>`;
+      row.addEventListener("click", ()=>{
+        const existing = sessions[pendingSlotKey];
+        if(existing && existing.tid===t.id){
+          // same trainee re-selected, keep paid status as-is
+        } else {
+          sessions[pendingSlotKey] = { tid: t.id, paid:false };
+        }
+        saveSessions(sessions);
+        closeOverlay("assignOverlay");
+        renderAll();
+      });
+      assignList.appendChild(row);
+    });
+  }
+
+  traineeSearch.addEventListener("input", (e)=> renderAssignList(e.target.value));
+
+  clearSlotBtn.addEventListener("click", ()=>{
+    delete sessions[pendingSlotKey];
+    saveSessions(sessions);
+    closeOverlay("assignOverlay");
+    renderAll();
+  });
+
+  /* ---------------- manage trainees ---------------- */
+  const manageBtn = document.getElementById("manageBtn");
+  const manageList = document.getElementById("manageList");
+  const clientSearch = document.getElementById("clientSearch");
+  clientSearch.addEventListener("input", (e)=> renderManageList(e.target.value));
+  const newTraineeName = document.getElementById("newTraineeName");
+  const newTraineePrice = document.getElementById("newTraineePrice");
+
+  manageBtn.addEventListener("click", ()=>{
+    clientSearch.value = "";
+    renderManageList("");
+    openOverlay("manageOverlay");
+  });
+
+  function renderManageList(filter){
+    const f = (typeof filter === "string" ? filter : clientSearch.value).trim().toLowerCase();
+    manageList.innerHTML = "";
+    const filtered = trainees.filter(t=> t.name.toLowerCase().includes(f));
+    if(trainees.length===0){
+      manageList.innerHTML = `<div class="empty-note">עדיין אין לקוחות.<br>הוסיפו שם ומחיר למעלה.</div>`;
+      return;
+    }
+    if(filtered.length===0){
+      manageList.innerHTML = `<div class="empty-note">לא נמצאו לקוחות תואמים.</div>`;
+      return;
+    }
+    filtered.slice().sort((a,b)=>a.name.localeCompare(b.name,'he')).forEach(t=>{
+      const debt = computeDebt(t.id);
+      const card = document.createElement("div");
+      card.className = "client-card";
+      card.innerHTML = `
+        <div class="client-card-top">
+          <div class="tr-name">${escapeHtml(t.name)}</div>
+          <div class="client-card-price">
+            <span>₪</span><input type="number" class="price-edit" value="${Number(t.price)||0}" title="מחיר לאימון">
+          </div>
+          <button class="del-btn" title="מחיקה">🗑</button>
+        </div>
+        <div class="debt-status">
+          <div class="debt-line ${debt.count>0 ? 'in-debt' : 'clear'}">
+            ${debt.count>0 ? 'בחוב · '+debt.count+' אימונים · ₪'+debt.sum : '✓ אין חוב פתוח'}
+          </div>
+          ${debt.count>0 ? '<button class="mark-paid-btn">סמן הכל כשולם</button>' : ''}
+        </div>
+      `;
+      const priceInput = card.querySelector(".price-edit");
+      priceInput.addEventListener("input", ()=>{
+        t.price = Number(priceInput.value)||0;
+        saveTrainees(trainees);
+        renderRevenueChip();
+        renderDayTabs();
+        renderManageList();
+      });
+      const markPaidBtn = card.querySelector(".mark-paid-btn");
+      if(markPaidBtn) markPaidBtn.addEventListener("click", ()=>{
+        if(!confirm("לסמן את כל האימונים הפתוחים של "+t.name+" כשולמו?")) return;
+        Object.values(sessions).forEach(s=>{ if(s && s.tid===t.id) s.paid = true; });
+        saveSessions(sessions);
+        renderManageList();
+        renderAll();
+      });
+      card.querySelector(".del-btn").addEventListener("click", ()=>{
+        if(confirm("למחוק את "+t.name+"? שיבוצים קיימים שלו יישארו רשומים אך לא יוצגו בשם.")){
+          trainees = trainees.filter(x=>x.id!==t.id);
+          saveTrainees(trainees);
+          renderManageList();
+          renderAll();
+        }
+      });
+      manageList.appendChild(card);
+    });
+  }
+
+  document.getElementById("addTraineeBtn").addEventListener("click", addTrainee);
+  newTraineeName.addEventListener("keydown", e=>{ if(e.key==="Enter") addTrainee(); });
+  newTraineePrice.addEventListener("keydown", e=>{ if(e.key==="Enter") addTrainee(); });
+
+  function addTrainee(){
+    const name = newTraineeName.value.trim();
+    const price = Number(newTraineePrice.value)||0;
+    if(!name) { newTraineeName.focus(); return; }
+    trainees.push({ id: "t_"+Date.now()+"_"+Math.floor(Math.random()*1000), name, price });
+    saveTrainees(trainees);
+    newTraineeName.value = "";
+    newTraineePrice.value = "";
+    renderManageList();
+    renderAll();
+    newTraineeName.focus();
+  }
+
+  /* ---------------- report ---------------- */
+  const revenueChip = document.getElementById("revenueChip");
+  const repWeekBtn = document.getElementById("repWeekBtn");
+  const repMonthBtn = document.getElementById("repMonthBtn");
+  const reportAmt = document.getElementById("reportAmt");
+  const reportLbl = document.getElementById("reportLbl");
+  const reportBreakdown = document.getElementById("reportBreakdown");
+  let reportMode = "week";
+
+  revenueChip.addEventListener("click", ()=>{
+    reportMode = "week";
+    updateReport();
+    openOverlay("reportOverlay");
+  });
+  repWeekBtn.addEventListener("click", ()=>{ reportMode="week"; updateReport(); });
+  repMonthBtn.addEventListener("click", ()=>{ reportMode="month"; updateReport(); });
+
+  function updateReport(){
+    repWeekBtn.classList.toggle("active", reportMode==="week");
+    repMonthBtn.classList.toggle("active", reportMode==="month");
+
+    const perTrainee = {}; // id -> {name, sum, count}
+    let total = 0;
+
+    if(reportMode==="week"){
+      reportLbl.textContent = 'סה"כ השבוע';
+      for(let i=0;i<7;i++){
+        const d = addDays(currentWeekStart,i);
+        accumulateDay(d, perTrainee);
+      }
+    } else {
+      reportLbl.textContent = 'סה"כ החודש (' + HE_MONTHS[selectedDate.getMonth()] + ')';
+      const y = selectedDate.getFullYear(), m = selectedDate.getMonth();
+      const daysInMonth = new Date(y, m+1, 0).getDate();
+      for(let day=1; day<=daysInMonth; day++){
+        accumulateDay(new Date(y,m,day), perTrainee);
+      }
+    }
+
+    Object.values(perTrainee).forEach(v=> total+=v.sum);
+    reportAmt.textContent = "₪"+total;
+
+    reportBreakdown.innerHTML = "";
+    const arr = Object.values(perTrainee).sort((a,b)=>b.sum-a.sum);
+    if(arr.length===0){
+      reportBreakdown.innerHTML = `<div class="empty-note">אין הכנסות בטווח הזה עדיין.</div>`;
+      return;
+    }
+    arr.forEach(v=>{
+      const row = document.createElement("div");
+      row.className = "breakdown-row";
+      row.innerHTML = `<span>${escapeHtml(v.name)} <span style="color:var(--muted);font-size:12px;">(${v.count})</span></span><span class="b-amt">₪${v.sum}</span>`;
+      reportBreakdown.appendChild(row);
+    });
+  }
+
+  function accumulateDay(d, perTrainee){
+    const iso = toISODate(d);
+    HOURS.forEach(h=>{
+      const tid = sessionTid(iso+"_"+h);
+      if(!tid) return;
+      const t = traineeById(tid);
+      const name = t ? t.name : "מתאמן שנמחק";
+      const price = t ? (Number(t.price)||0) : 0;
+      if(!perTrainee[tid]) perTrainee[tid] = { name, sum:0, count:0 };
+      perTrainee[tid].sum += price;
+      perTrainee[tid].count += 1;
+    });
+  }
+
+  /* ---------------- overlays ---------------- */
+  function openOverlay(id){ document.getElementById(id).classList.add("open"); }
+  function closeOverlay(id){ document.getElementById(id).classList.remove("open"); }
+  document.querySelectorAll("[data-close]").forEach(btn=>{
+    btn.addEventListener("click", ()=> closeOverlay(btn.getAttribute("data-close")));
+  });
+  document.querySelectorAll(".overlay").forEach(ov=>{
+    ov.addEventListener("click", (e)=>{ if(e.target===ov) closeOverlay(ov.id); });
+  });
+
+  /* ---------------- info sheet (home screen) ---------------- */
+  document.getElementById("infoBtn").addEventListener("click", ()=>{
+    alert("להוספה למסך הבית באייפון:\n1. פתחו את הדף בספארי\n2. הקישו על כפתור השיתוף (הריבוע עם החץ)\n3. בחרו 'הוסף למסך הבית'\n\nהאפליקציה שומרת הכל בזיכרון המקומי של הדפדפן — מומלץ להימנע מניקוי היסטוריה/דאטה של האתר.");
+  });
+
+  /* ---------------- init ---------------- */
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
