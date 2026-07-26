@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>מעקב אימונים</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f7;
+    --card:#ffffff;
+    --primary:#1d5b6b;
+    --primary-dark:#123f4a;
+    --primary-light:#dceef1;
+    --ink:#141a1c;
+    --muted:#51616a;
+    --border:#c9d3d6;
+    --him:#1d5b6b;
+    --her:#a3521c;
+    --focus:#0b3d91;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding-bottom:80px;
+    font-size:16px;
+    line-height:1.45;
+  }
+  *:focus-visible{
+    outline:3px solid var(--focus);
+    outline-offset:2px;
+  }
+  header{
+    background:var(--primary-dark);
+    color:#fff;
+    padding:16px;
+    text-align:center;
+    position:sticky;
+    top:0;
+    z-index:10;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  header h1{margin:0;font-size:21px;font-weight:800;}
+  .names-row{
+    display:flex;
+    gap:8px;
+    padding:10px 12px;
+    background:var(--primary);
+  }
+  .name-edit{
+    flex:1;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.22);
+    border:1.5px solid rgba(255,255,255,0.5);
+    border-radius:10px;
+    padding:8px 10px;
+    min-height:44px;
+  }
+  .name-edit input{
+    background:transparent;
+    border:none;
+    color:#fff;
+    font-weight:700;
+    font-size:16px;
+    width:100%;
+  }
+  .name-edit input::placeholder{color:rgba(255,255,255,0.85);}
+  .name-edit input:focus-visible{outline:3px solid #fff;outline-offset:2px;border-radius:4px;}
+  .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,0.8);}
+  .dot.a{background:#e8f3f6;}
+  .dot.b{background:#f6ddc4;}
+
+  .active-person-bar{
+    background:var(--primary-light);
+    border-bottom:1px solid var(--border);
+    padding:10px 12px;
+  }
+  .active-person-bar label{
+    font-size:12px;
+    font-weight:700;
+    color:var(--primary-dark);
+    margin-bottom:6px;
+  }
+
+  .tabs{
+    display:flex;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:13px 4px;
+    min-height:48px;
+    font-size:14px;
+    font-weight:700;
+    color:var(--muted);
+    border:none;
+    border-bottom:3px solid transparent;
+    background:#fff;
+    cursor:pointer;
+  }
+  .tab.active{
+    color:var(--primary-dark);
+    border-bottom-color:var(--primary);
+  }
+
+  .view{display:none;padding:14px;max-width:640px;margin:0 auto;}
+  .view.active{display:block;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    margin:0 0 10px 0;
+    font-size:16px;
+    color:var(--primary-dark);
+  }
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px;}
+  input[type=date], select, input[type=text], input[type=number]{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:15px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .row{display:flex;gap:8px;margin-bottom:10px;}
+  .row > *{flex:1;}
+
+  .person-toggle{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .person-btn{
+    flex:1;
+    padding:12px;
+    min-height:46px;
+    border-radius:10px;
+    border:2px solid var(--border);
+    background:#fff;
+    color:var(--ink);
+    font-weight:700;
+    font-size:15px;
+    text-align:center;
+    cursor:pointer;
+  }
+  .person-btn.sel-a{border-color:var(--him);color:var(--him);background:#e3eef1;}
+  .person-btn.sel-b{border-color:var(--her);color:var(--her);background:var(--primary-light);}
+
+  .exercise-block{
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px;
+    margin-bottom:10px;
+  }
+  .exercise-block h3{
+    margin:0 0 8px 0;
+    font-size:15px;
+  }
+  .set-row{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    margin-bottom:6px;
+  }
+  .set-row span{font-size:12px;color:var(--muted);width:20px;text-align:center;}
+  .set-row input{padding:7px 8px;font-size:14px;}
+  .set-row button{
+    background:none;border:none;color:#b3261e;font-size:18px;padding:0 4px;cursor:pointer;
+  }
+  .btn{
+    display:inline-block;
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    padding:9px 14px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn.secondary{
+    background:#fff;
+    color:var(--primary-dark);
+    border:1.5px solid var(--primary);
+  }
+  .btn.small{padding:6px 10px;font-size:13px;}
+  .btn.full{width:100%;margin-top:6px;}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+  .exercise-list-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:6px 6px 6px 10px;
+    border:1.5px solid var(--border);
+    border-radius:9px;
+    margin-bottom:8px;
+    background:#fbfcfc;
+  }
+  .exercise-list-item input{
+    border:1.5px solid transparent;
+    background:#fff;
+    font-size:15px;
+    padding:8px 9px;
+    border-radius:7px;
+    min-height:40px;
+  }
+  .exercise-list-item input:hover{border-color:var(--border);}
+  .exercise-list-item input:focus-visible{border-color:var(--primary);outline:none;}
+  .edit-hint{font-size:11px;color:var(--muted);margin:-4px 0 8px 2px;}
+  .manage-person-note{font-size:14px;font-weight:700;color:var(--primary-dark);margin-bottom:8px;}
+  .del-btn{color:#b3261e;background:none;border:none;font-size:18px;cursor:pointer;padding:8px 10px;min-height:40px;min-width:40px;}
+
+  .empty-msg{color:var(--muted);font-size:14px;text-align:center;padding:20px 0;}
+
+  .log-entry{
+    border-bottom:1px solid var(--border);
+    padding:8px 0;
+    font-size:14px;
+  }
+  .log-entry:last-child{border-bottom:none;}
+  .log-entry .ex-name{font-weight:700;}
+  .log-entry .sets{color:var(--muted);font-size:13px;margin-top:2px;}
+  .log-date-header{
+    font-size:13px;
+    font-weight:700;
+    color:var(--primary-dark);
+    margin:10px 0 4px 0;
+  }
+
+  .save-toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:#fff;
+    padding:9px 18px;
+    border-radius:20px;
+    font-size:13px;
+    opacity:0;
+    transition:opacity .3s;
+    pointer-events:none;
+    z-index:100;
+  }
+  .save-toast.show{opacity:1;}
+
+  select#progressExercise, select#progressPerson{margin-bottom:10px;}
+  canvas{max-width:100%;}
+
+  .backup-row{display:flex;gap:8px;margin-top:6px;}
+  .backup-row .btn{flex:1;text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>מעקב אימונים</h1>
+</header>
+<div class="names-row">
+  <div class="name-edit">
+    <span class="dot a"></span>
+    <input id="nameA" placeholder="שם מתאמן" aria-label="שם המתאמן" /></div>
+  <div class="name-edit">
+    <span class="dot b"></span>
+    <input id="nameB" placeholder="שם מתאמנת" aria-label="שם המתאמנת" />
+  </div>
+</div>
+
+<div class="active-person-bar">
+  <label id="activePersonLabel">מי מתאמן/ת עכשיו</label>
+  <div class="person-toggle" role="group" aria-labelledby="activePersonLabel">
+    <button type="button" class="person-btn sel-a" id="btnPersonA" aria-pressed="true">-</button>
+    <button type="button" class="person-btn" id="btnPersonB" aria-pressed="false">-</button>
+  </div>
+</div>
+
+<div class="tabs" role="tablist" aria-label="ניווט בין מסכים">
+  <button class="tab active" data-view="log" role="tab" aria-selected="true">רישום היום</button>
+  <button class="tab" data-view="history" role="tab" aria-selected="false">היסטוריה</button>
+  <button class="tab" data-view="progress" role="tab" aria-selected="false">התקדמות</button>
+  <button class="tab" data-view="manage" role="tab" aria-selected="false">תרגילים</button>
+</div>
+
+<!-- LOG VIEW -->
+<div class="view active" id="view-log">
+  <div class="card">
+    <label for="logDate">תאריך</label>
+    <input type="date" id="logDate">
+  </div>
+
+  <div class="card">
+    <h2>הוספת תרגיל לרישום</h2>
+    <div class="manage-person-note" id="logExerciseHint"></div>
+    <label for="exerciseSelect">תרגיל</label>
+    <div class="row" style="margin-bottom:0;">
+      <select id="exerciseSelect"></select>
+      <button class="btn secondary" id="goEditExercises" type="button" style="flex:0 0 auto;" aria-label="עריכת רשימת התרגילים">✏️ עריכת שמות</button>
+    </div>
+    <button class="btn full" id="addExerciseToLog">➕ הוסף תרגיל לאימון</button>
+  </div>
+
+  <div id="todayExercises"></div>
+
+  <button class="btn full" id="saveLogBtn" style="margin-top:6px;">💾 שמור אימון</button>
+</div>
+
+<!-- HISTORY VIEW -->
+<div class="view" id="view-history">
+  <div class="card">
+    <label id="histLabel">הצג היסטוריה עבור</label>
+    <div class="person-toggle" role="group" aria-labelledby="histLabel">
+      <button type="button" class="person-btn sel-a" id="histBtnA" aria-pressed="true">-</button>
+      <button type="button" class="person-btn" id="histBtnB" aria-pressed="false">-</button>
+    </div>
+  </div>
+  <div class="card" id="historyList"></div>
+</div>
+
+<!-- PROGRESS VIEW -->
+<div class="view" id="view-progress">
+  <div class="card">
+    <label for="progressPerson">מתאמן/ת</label>
+    <select id="progressPerson"></select>
+    <label for="progressExercise">תרגיל</label>
+    <select id="progressExercise"></select>
+  </div>
+  <div class="card">
+    <h2 id="progressTitle">התקדמות</h2>
+    <canvas id="progressChart" height="220"></canvas>
+    <div class="empty-msg" id="progressEmpty" style="display:none;">אין עדיין נתונים לתרגיל זה</div>
+  </div>
+</div>
+
+<!-- MANAGE VIEW -->
+<div class="view" id="view-manage">
+  <div class="card">
+    <h2>ניהול תרגילים</h2>
+    <div class="manage-person-note" id="manageActivePersonNote"></div>
+    <div class="edit-hint">לחיצה על שם תרגיל מאפשרת לערוך אותו ישירות</div>
+    <div id="exerciseManageList"></div>
+    <div class="row" style="margin-top:8px;">
+      <input type="text" id="newExerciseInput" placeholder="שם תרגיל חדש">
+      <button class="btn" id="addNewExercise">הוסף</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>גיבוי ושחזור נתונים</h2>
+    <div class="backup-row">
+      <button class="btn secondary" id="exportBtn">⬇️ ייצוא גיבוי</button>
+      <button class="btn secondary" id="importBtn">⬆️ ייבוא גיבוי</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none;">
+  </div>
+</div>
+
+<div class="save-toast" id="toast">נשמר ✓</div>
+
+<script>
+const STORAGE_KEY = 'couple-tracker-data-v1';
+
+let data = loadData();
+let currentPerson = 'a'; // drives Log tab + Manage tab exercise lists
+let currentTodayLog = []; // {exercise, sets:[{reps,weight}]}
+let historyPerson = 'a';
+let chartInstance = null;
+
+function normalizeData(parsed){
+  if(!parsed.names) parsed.names = {a:'מתאמן', b:'מתאמנת'};
+  if(!parsed.names.a) parsed.names.a = 'מתאמן';
+  if(!parsed.names.b) parsed.names.b = 'מתאמנת';
+  if(Array.isArray(parsed.exercises)){
+    // migrate from old shared exercise list to per-person lists
+    parsed.exercises = {a: [...parsed.exercises], b: [...parsed.exercises]};
+  }
+  if(!parsed.exercises) parsed.exercises = {a:[], b:[]};
+  if(!Array.isArray(parsed.exercises.a)) parsed.exercises.a = [];
+  if(!Array.isArray(parsed.exercises.b)) parsed.exercises.b = [];
+  if(!Array.isArray(parsed.logs)) parsed.logs = [];
+  return parsed;
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return normalizeData(JSON.parse(raw));
+  }catch(e){}
+  return {
+    names:{a:'מתאמן', b:'מתאמנת'},
+    exercises:{
+      a:['סקוואט','לחיצת חזה','דדליפט','משיכה'],
+      b:['סקוואט','לחיצת חזה','דדליפט','משיכה']
+    },
+    logs:[] // {date, person, exercise, sets:[{reps,weight}]}
+  };
+}
+
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    showToast();
+  }catch(e){
+    alert('שגיאה בשמירה: ' + e.message);
+  }
+}
+
+function showToast(){
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+function todayStr(){
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off*60000);
+  return local.toISOString().slice(0,10);
+}
+
+// ---------- INIT ----------
+function init(){
+  document.getElementById('nameA').value = data.names.a;
+  document.getElementById('nameB').value = data.names.b;
+  document.getElementById('logDate').value = todayStr();
+
+  document.getElementById('nameA').addEventListener('input', e=>{
+    data.names.a = e.target.value || 'מתאמן';
+    saveData();
+    renderPersonButtons();
+    renderProgressPersonSelect();
+  });
+  document.getElementById('nameB').addEventListener('input', e=>{
+    data.names.b = e.target.value || 'מתאמנת';
+    saveData();
+    renderPersonButtons();
+    renderProgressPersonSelect();
+  });
+
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>{t.classList.remove('active'); t.setAttribute('aria-selected','false');});
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected','true');
+      document.getElementById('view-'+tab.dataset.view).classList.add('active');
+      if(tab.dataset.view === 'history') renderHistory();
+      if(tab.dataset.view === 'progress'){ renderProgressExerciseSelect(); renderProgressChart(); }
+      if(tab.dataset.view === 'manage') renderManageList();
+    });
+  });
+
+  document.getElementById('btnPersonA').addEventListener('click', ()=>selectActivePerson('a'));
+  document.getElementById('btnPersonB').addEventListener('click', ()=>selectActivePerson('b'));
+  document.getElementById('histBtnA').addEventListener('click', ()=>{historyPerson='a';renderHistory();});
+  document.getElementById('histBtnB').addEventListener('click', ()=>{historyPerson='b';renderHistory();});
+
+  document.getElementById('addExerciseToLog').addEventListener('click', addExerciseToTodayLog);
+  document.getElementById('goEditExercises').addEventListener('click', ()=>{
+    document.querySelector('.tab[data-view="manage"]').click();
+    document.getElementById('newExerciseInput').focus();
+  });
+  document.getElementById('saveLogBtn').addEventListener('click', saveTodayLog);
+
+  document.getElementById('logDate').addEventListener('change', loadExistingLogForDate);
+
+  document.getElementById('addNewExercise').addEventListener('click', addNewExercise);
+
+  document.getElementById('progressPerson').addEventListener('change', ()=>{
+    renderProgressExerciseSelect();
+    renderProgressChart();
+  });
+  document.getElementById('progressExercise').addEventListener('change', renderProgressChart);
+
+  document.getElementById('exportBtn').addEventListener('click', exportBackup);
+  document.getElementById('importBtn').addEventListener('click', ()=>document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', importBackup);
+
+  renderPersonButtons();
+  renderExerciseSelect();
+  renderProgressPersonSelect();
+  renderProgressExerciseSelect();
+  renderManageList();
+  loadExistingLogForDate();
+}
+
+function renderPersonButtons(){
+  document.getElementById('btnPersonA').textContent = data.names.a;
+  document.getElementById('btnPersonB').textContent = data.names.b;
+  document.getElementById('histBtnA').textContent = data.names.a;
+  document.getElementById('histBtnB').textContent = data.names.b;
+  selectActivePerson(currentPerson, true);
+}
+
+function selectActivePerson(p, skipReload){
+  currentPerson = p;
+  document.getElementById('btnPersonA').className = 'person-btn' + (p==='a' ? ' sel-a' : '');
+  document.getElementById('btnPersonB').className = 'person-btn' + (p==='b' ? ' sel-b' : '');
+  document.getElementById('btnPersonA').setAttribute('aria-pressed', p==='a' ? 'true':'false');
+  document.getElementById('btnPersonB').setAttribute('aria-pressed', p==='b' ? 'true':'false');
+  const personName = p==='a' ? data.names.a : data.names.b;
+  document.getElementById('logExerciseHint').textContent = 'מציג את התרגילים של ' + personName;
+  document.getElementById('manageActivePersonNote').textContent = 'עורך את רשימת התרגילים של ' + personName;
+  renderExerciseSelect();
+  renderManageList();
+  if(!skipReload) loadExistingLogForDate();
+}
+
+// ---------- EXERCISE LIST ----------
+function renderExerciseSelect(){
+  const sel = document.getElementById('exerciseSelect');
+  sel.innerHTML = '';
+  const list = data.exercises[currentPerson];
+  if(list.length===0){
+    const opt = document.createElement('option');
+    opt.value = ''; opt.textContent = 'אין תרגילים - הוסיפו בטאב "תרגילים"';
+    sel.appendChild(opt);
+    return;
+  }
+  list.forEach(ex=>{
+    const opt = document.createElement('option');
+    opt.value = ex; opt.textContent = ex;
+    sel.appendChild(opt);
+  });
+}
+
+function renderManageList(){
+  const container = document.getElementById('exerciseManageList');
+  container.innerHTML = '';
+  const list = data.exercises[currentPerson];
+  if(list.length===0){
+    container.innerHTML = '<div class="empty-msg">אין עדיין תרגילים למתאמן/ת זו</div>';
+    return;
+  }
+  list.forEach((ex, idx)=>{
+    const item = document.createElement('div');
+    item.className = 'exercise-list-item';
+    item.innerHTML = `
+      <input type="text" data-idx="${idx}" value="${escapeHtml(ex)}">
+      <button class="del-btn" data-idx="${idx}" aria-label="מחק תרגיל ${escapeHtml(ex)}">🗑️</button>
+    `;
+    container.appendChild(item);
+  });
+  container.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const idx = +e.target.dataset.idx;
+      data.exercises[currentPerson][idx] = e.target.value;
+      saveData();
+      renderExerciseSelect();
+      renderProgressExerciseSelect();
+    });
+  });
+  container.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const idx = +e.target.dataset.idx;
+      if(confirm('למחוק את התרגיל "' + data.exercises[currentPerson][idx] + '"?')){
+        data.exercises[currentPerson].splice(idx,1);
+        saveData();
+        renderManageList();
+        renderExerciseSelect();
+        renderProgressExerciseSelect();
+      }
+    });
+  });
+}
+
+function addNewExercise(){
+  const inp = document.getElementById('newExerciseInput');
+  const val = inp.value.trim();
+  if(!val) return;
+  data.exercises[currentPerson].push(val);
+  inp.value = '';
+  saveData();
+  renderManageList();
+  renderExerciseSelect();
+  renderProgressExerciseSelect();
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ---------- TODAY LOG ----------
+function addExerciseToTodayLog(){
+  const sel = document.getElementById('exerciseSelect');
+  const exName = sel.value;
+  if(!exName) return;
+  if(currentTodayLog.find(e=>e.exercise===exName)) return;
+  currentTodayLog.push({exercise: exName, sets:[{reps:'', weight:''}]});
+  renderTodayExercises();
+}
+
+function renderTodayExercises(){
+  const container = document.getElementById('todayExercises');
+  container.innerHTML = '';
+  if(currentTodayLog.length===0){
+    container.innerHTML = '<div class="empty-msg">עדיין לא נוספו תרגילים לאימון</div>';
+    return;
+  }
+  currentTodayLog.forEach((entry, exIdx)=>{
+    const block = document.createElement('div');
+    block.className = 'card exercise-block';
+    let setsHtml = '';
+    entry.sets.forEach((s, setIdx)=>{
+      setsHtml += `
+        <div class="set-row">
+          <span>${setIdx+1}</span>
+          <input type="number" inputmode="numeric" placeholder="חזרות" data-ex="${exIdx}" data-set="${setIdx}" data-field="reps" value="${s.reps}">
+          <input type="number" inputmode="decimal" placeholder='משקל (ק"ג)' data-ex="${exIdx}" data-set="${setIdx}" data-field="weight" value="${s.weight}">
+          <button data-ex="${exIdx}" data-set="${setIdx}" class="del-set" aria-label="מחק סט ${setIdx+1}">✕</button>
+        </div>
+      `;
+    });
+    block.innerHTML = `
+      <h3>${escapeHtml(entry.exercise)} <button class="del-btn del-exercise" data-ex="${exIdx}" style="float:left;">🗑️ הסר תרגיל</button></h3>
+      ${setsHtml}
+      <button class="btn secondary small add-set" data-ex="${exIdx}">➕ הוסף סט</button>
+    `;
+    container.appendChild(block);
+  });
+
+  container.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const exIdx = +e.target.dataset.ex;
+      const setIdx = +e.target.dataset.set;
+      const field = e.target.dataset.field;
+      currentTodayLog[exIdx].sets[setIdx][field] = e.target.value;
+    });
+  });
+  container.querySelectorAll('.add-set').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const exIdx = +e.target.dataset.ex;
+      currentTodayLog[exIdx].sets.push({reps:'', weight:''});
+      renderTodayExercises();
+    });
+  });
+  container.querySelectorAll('.del-set').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const exIdx = +e.target.dataset.ex;
+      const setIdx = +e.target.dataset.set;
+      currentTodayLog[exIdx].sets.splice(setIdx,1);
+      if(currentTodayLog[exIdx].sets.length===0) currentTodayLog[exIdx].sets.push({reps:'',weight:''});
+      renderTodayExercises();
+    });
+  });
+  container.querySelectorAll('.del-exercise').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const exIdx = +e.target.dataset.ex;
+      currentTodayLog.splice(exIdx,1);
+      renderTodayExercises();
+    });
+  });
+}
+
+function loadExistingLogForDate(){
+  const date = document.getElementById('logDate').value;
+  const existing = data.logs.filter(l=>l.date===date && l.person===currentPerson);
+  currentTodayLog = existing.map(l=>({exercise:l.exercise, sets: l.sets.map(s=>({reps:String(s.reps), weight:String(s.weight)}))}));
+  renderTodayExercises();
+}
+
+function saveTodayLog(){
+  const date = document.getElementById('logDate').value;
+  if(!date){ alert('בחר תאריך'); return; }
+  // remove existing entries for this date+person
+  data.logs = data.logs.filter(l => !(l.date===date && l.person===currentPerson));
+  currentTodayLog.forEach(entry=>{
+    const cleanSets = entry.sets
+      .filter(s=> s.reps !== '' || s.weight !== '')
+      .map(s=>({reps: Number(s.reps)||0, weight: Number(s.weight)||0}));
+    if(cleanSets.length>0){
+      data.logs.push({date, person: currentPerson, exercise: entry.exercise, sets: cleanSets});
+    }
+  });
+  saveData();
+}
+
+// ---------- HISTORY ----------
+function renderHistory(){
+  document.getElementById('histBtnA').className = 'person-btn' + (historyPerson==='a' ? ' sel-a' : '');
+  document.getElementById('histBtnB').className = 'person-btn' + (historyPerson==='b' ? ' sel-b' : '');
+  document.getElementById('histBtnA').setAttribute('aria-pressed', historyPerson==='a' ? 'true':'false');
+  document.getElementById('histBtnB').setAttribute('aria-pressed', historyPerson==='b' ? 'true':'false');
+
+  const container = document.getElementById('historyList');
+  const logs = data.logs.filter(l=>l.person===historyPerson);
+  if(logs.length===0){
+    container.innerHTML = '<div class="empty-msg">אין עדיין רישומים</div>';
+    return;
+  }
+  const byDate = {};
+  logs.forEach(l=>{
+    if(!byDate[l.date]) byDate[l.date] = [];
+    byDate[l.date].push(l);
+  });
+  const dates = Object.keys(byDate).sort().reverse();
+  let html = '';
+  dates.forEach(date=>{
+    html += `<div class="log-date-header">${formatDate(date)}</div>`;
+    byDate[date].forEach(l=>{
+      const setsDesc = l.sets.map(s=>`${s.reps}×${s.weight}ק"ג`).join(' | ');
+      html += `<div class="log-entry"><div class="ex-name">${escapeHtml(l.exercise)}</div><div class="sets">${setsDesc}</div></div>`;
+    });
+  });
+  container.innerHTML = html;
+}
+
+function formatDate(iso){
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ---------- PROGRESS ----------
+function renderProgressPersonSelect(){
+  const sel = document.getElementById('progressPerson');
+  const prevVal = sel.value;
+  sel.innerHTML = `<option value="a">${escapeHtml(data.names.a)}</option><option value="b">${escapeHtml(data.names.b)}</option>`;
+  if(prevVal) sel.value = prevVal;
+}
+
+function renderProgressExerciseSelect(){
+  const sel = document.getElementById('progressExercise');
+  const person = document.getElementById('progressPerson').value || 'a';
+  const prevVal = sel.value;
+  sel.innerHTML = '';
+  const list = data.exercises[person];
+  if(list.length===0){
+    const opt = document.createElement('option');
+    opt.value=''; opt.textContent='אין תרגילים';
+    sel.appendChild(opt);
+    return;
+  }
+  list.forEach(ex=>{
+    const opt = document.createElement('option');
+    opt.value = ex; opt.textContent = ex;
+    sel.appendChild(opt);
+  });
+  if(prevVal && list.includes(prevVal)) sel.value = prevVal;
+}
+
+function renderProgressChart(){
+  const person = document.getElementById('progressPerson').value;
+  const exercise = document.getElementById('progressExercise').value;
+  const personName = person==='a' ? data.names.a : data.names.b;
+  document.getElementById('progressTitle').textContent = `התקדמות: ${personName} — ${exercise}`;
+
+  const logs = data.logs
+    .filter(l=>l.person===person && l.exercise===exercise)
+    .sort((a,b)=> a.date.localeCompare(b.date));
+
+  const canvas = document.getElementById('progressChart');
+  const emptyMsg = document.getElementById('progressEmpty');
+
+  if(logs.length===0){
+    canvas.style.display='none';
+    emptyMsg.style.display='block';
+    if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
+    return;
+  }
+  canvas.style.display='block';
+  emptyMsg.style.display='none';
+
+  const labels = logs.map(l=>formatDate(l.date));
+  const maxWeights = logs.map(l=> Math.max(...l.sets.map(s=>s.weight)));
+  const totalReps = logs.map(l=> l.sets.reduce((a,s)=>a+s.reps,0));
+
+  if(chartInstance) chartInstance.destroy();
+  const color = person==='a' ? '#1d5b6b' : '#a3521c';
+  chartInstance = new Chart(canvas, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'משקל מקסימלי (ק"ג)',
+          data: maxWeights,
+          borderColor: color,
+          backgroundColor: color,
+          tension:0.25,
+          pointRadius:4,
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:true}},
+      scales:{
+        y:{beginAtZero:true, title:{display:true,text:'ק"ג'}}
+      }
+    }
+  });
+}
+
+// ---------- BACKUP ----------
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'couple-tracker-backup-' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const parsed = JSON.parse(ev.target.result);
+      if(!parsed.names || !parsed.exercises || !parsed.logs) throw new Error('פורמט לא תקין');
+      data = normalizeData(parsed);
+      saveData();
+      init();
+      alert('הייבוא הצליח!');
+    }catch(err){
+      alert('שגיאה בייבוא: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+init();
+</script>
+</body>
+</html>
