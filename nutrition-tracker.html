@@ -219,6 +219,20 @@
   }
   .saved-food-item .del:hover{ color:var(--bad); background:var(--bad-dim); }
 
+  /* food categories (accordion) */
+  .food-category{ border-bottom:1px solid var(--border); }
+  .food-category:last-child{ border-bottom:none; }
+  .food-cat-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 2px; cursor:pointer; user-select:none;
+  }
+  .food-cat-header .cat-name{ font-weight:600; font-size:13.5px; }
+  .food-cat-header .cat-count{ font-size:11.5px; color:var(--text-faint); margin-inline-start:6px; font-weight:400; }
+  .food-cat-header .chev{ color:var(--text-faint); transition: transform .2s ease; font-size:13px; }
+  .food-cat-header.open .chev{ transform: rotate(180deg); }
+  .food-cat-items{ display:none; padding-bottom:2px; }
+  .food-cat-items.open{ display:block; }
+
   /* log list */
   .log-item{
     display:flex; align-items:center; gap:10px;
@@ -263,6 +277,13 @@
   .trend-box .t-delta.up{ color:var(--bad); }
   .trend-box .t-delta.down{ color:var(--good); }
   .trend-box .t-delta.flat{ color:var(--text-faint); }
+
+  /* goal progress */
+  .goal-card{ margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+  .goal-progress-track{ height:10px; border-radius:6px; background:var(--surface-3); overflow:hidden; margin:10px 0 8px; }
+  .goal-progress-fill{ height:100%; border-radius:6px; background:var(--good); transition:width .3s ease; }
+  .goal-stats{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-dim); }
+  .goal-stats b{ color:var(--text); }
 
   footer{ text-align:center; padding: 22px 10px 10px; color:var(--text-faint); font-size:11.5px; line-height:1.7; }
   footer .fbtns{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
@@ -317,6 +338,16 @@
         </select>
       </div>
     </div>
+    <div class="field-grid" style="margin-top:12px;">
+      <div class="field">
+        <label>משקל יעד (ק״ג)</label>
+        <input type="number" id="inGoalWeight" inputmode="decimal" placeholder="למשל 96" step="0.1">
+      </div>
+      <div class="field">
+        <label>אחוז שומן יעד (%)</label>
+        <input type="number" id="inGoalFat" inputmode="decimal" placeholder="למשל 13" step="0.1">
+      </div>
+    </div>
     <div class="setup-hint">החישוב מתבסס על מסת הגוף הרזה שלך (BMR לפי Katch-McArdle), רמת הפעילות והיעד שנבחר. חלבון ושומן נגזרים מהמשקל, והפחמימות משלימות את יתרת הקלוריות.</div>
 
     <div class="field" style="margin-top:14px;">
@@ -340,6 +371,26 @@
         <div class="today-pill" id="todayPill"></div>
       </div>
       <button id="nextDay">›</button>
+    </div>
+
+    <div class="card" id="goalCard">
+      <h2><span class="dot"></span> ההתקדמות שלי ליעד</h2>
+      <div id="goalProgressBox" class="goal-card hidden" style="margin-top:0; padding-top:0; border-top:none;">
+        <div class="macro-name" style="margin-bottom:6px;"><span class="sw" style="background:var(--accent)"></span>יעד משקל</div>
+        <div class="goal-stats"><span>התחלה: <b id="goalStart">-</b></span><span>עכשיו: <b id="goalCurrent">-</b></span><span>יעד: <b id="goalTarget">-</b></span></div>
+        <div class="goal-progress-track"><div class="goal-progress-fill" id="goalProgressFill" style="width:0%"></div></div>
+        <div class="goal-stats"><span id="goalRemainingText"></span><span id="goalPctText"></span></div>
+      </div>
+      <div id="goalFatBox" class="goal-card hidden">
+        <div class="macro-name" style="margin-bottom:6px;"><span class="sw" style="background:var(--fat)"></span>יעד אחוז שומן</div>
+        <div class="goal-stats"><span>התחלה: <b id="goalFatStart">-</b></span><span>עכשיו: <b id="goalFatCurrent">-</b></span><span>יעד: <b id="goalFatTarget">-</b></span></div>
+        <div class="goal-progress-track"><div class="goal-progress-fill" id="goalFatProgressFill" style="width:0%"></div></div>
+        <div class="goal-stats"><span id="goalFatRemainingText"></span><span id="goalFatPctText"></span></div>
+      </div>
+      <div class="goal-card" id="eatingProgressWrap">
+        <div class="macro-name" style="margin-bottom:6px;"><span class="sw" style="background:var(--good)"></span>לפי מה שאכלת</div>
+        <div id="eatingProgressBody"></div>
+      </div>
     </div>
 
     <div class="card ring-card">
@@ -413,8 +464,10 @@
           <div class="field"><label>פחמימות (גר׳)</label><input type="number" id="foodCarbs" inputmode="decimal" step="0.1" value="0"></div>
           <div class="field"><label>שומן (גר׳)</label><input type="number" id="foodFat" inputmode="decimal" step="0.1" value="0"></div>
         </div>
+        <div class="field"><label>קלוריות (אופציונלי — רק אם ידוע ולא רוצה לפרק למאקרו)</label><input type="number" id="foodCalories" inputmode="decimal" step="1" placeholder="השאר ריק לחישוב אוטומטי מהמאקרו"></div>
         <div class="cal-preview">בערך <b id="foodCalPreview">0</b> קק״ל</div>
         <div class="checkbox-row"><input type="checkbox" id="saveToListCheck"><label for="saveToListCheck">שמור גם במאגר המאכלים שלי</label></div>
+        <div class="field"><label>הערכים שהזנת מתייחסים לכמות של (גר׳) — לצורך חישוב כמות אחרת בעתיד</label><input type="number" id="foodBaseGrams" inputmode="decimal" step="1" value="100"></div>
         <button class="btn btn-primary" id="addFoodBtn">הוסף לרשימה</button>
       </div>
     </div>
@@ -423,6 +476,7 @@
       <h2><span class="dot"></span> מאגר מאכלים</h2>
       <div class="review-note" style="margin-top:-6px;">כולל רשימת מאכלים נפוצים מוכנה מראש, ובנוסף כל מה שתשמור בעצמך</div>
       <div class="field" style="margin-bottom:8px;"><input type="text" id="savedFoodSearch" placeholder="חיפוש במאגר..."></div>
+      <div id="qtyPickerBox"></div>
       <div id="savedFoodsList"></div>
     </div>
 
@@ -488,148 +542,233 @@
     localStorage.setItem(LS_SAVED_FOODS, JSON.stringify(savedFoods));
   }
 
-  const LS_SEEDED = 'nutri_seeded_v1';
-  const DEFAULT_FOODS = [
-    // ביצים וחלבונים מהחי
-    { name: 'ביצה (יחידה)', protein: 6, carbs: 0.5, fat: 5 },
-    { name: 'חלבון ביצה בלבד (יחידה)', protein: 3.5, carbs: 0.2, fat: 0 },
-    { name: 'חזה עוף מבושל (100 גר\')', protein: 31, carbs: 0, fat: 3.6 },
-    { name: 'שוק/ירך עוף עם עור מבושל (100 גר\')', protein: 26, carbs: 0, fat: 11 },
-    { name: 'כרעיים עוף ללא עור מבושל (100 גר\')', protein: 27, carbs: 0, fat: 8 },
-    { name: 'הודו טחון מבושל (100 גר\')', protein: 27, carbs: 0, fat: 8 },
-    { name: 'בשר בקר טחון 5% מבושל (100 גר\')', protein: 26, carbs: 0, fat: 5 },
-    { name: 'בשר בקר טחון 10% מבושל (100 גר\')', protein: 26, carbs: 0, fat: 10 },
-    { name: 'בשר בקר טחון 20% מבושל (100 גר\')', protein: 23, carbs: 0, fat: 20 },
-    { name: 'אנטריקוט בקר (100 גר\')', protein: 25, carbs: 0, fat: 18 },
-    { name: 'פילה בקר (100 גר\')', protein: 27, carbs: 0, fat: 8 },
-    { name: 'כבש / טלה (100 גר\')', protein: 25, carbs: 0, fat: 17 },
-    { name: 'סלמון אפוי (100 גר\')', protein: 25, carbs: 0, fat: 13 },
-    { name: 'טונה בשימורים במים (100 גר\')', protein: 26, carbs: 0, fat: 1 },
-    { name: 'טונה בשימורים בשמן (100 גר\')', protein: 25, carbs: 0, fat: 8 },
-    { name: 'דניס / לברק אפוי (100 גר\')', protein: 24, carbs: 0, fat: 3 },
-    { name: 'קוד / בקלה מבושל (100 גר\')', protein: 23, carbs: 0, fat: 1 },
-    { name: 'שרימפס מבושל (100 גר\')', protein: 24, carbs: 0.2, fat: 1 },
-    { name: 'נקניקיות עוף (יחידה)', protein: 8, carbs: 1, fat: 9 },
-    { name: 'נקניק בקר (100 גר\')', protein: 14, carbs: 2, fat: 26 },
-    { name: 'פסטרמה (2 פרוסות)', protein: 10, carbs: 0.5, fat: 3 },
-    { name: 'טופו (100 גר\')', protein: 8, carbs: 2, fat: 4.8 },
-    { name: 'טמפה (100 גר\')', protein: 19, carbs: 9, fat: 11 },
-    { name: 'סייטן (100 גר\')', protein: 25, carbs: 4, fat: 2 },
-    // קטניות
-    { name: 'עדשים מבושלות (100 גר\')', protein: 9, carbs: 20, fat: 0.4 },
-    { name: 'חומוס מבושל (100 גר\')', protein: 8.9, carbs: 27, fat: 2.6 },
-    { name: 'שעועית לבנה מבושלת (100 גר\')', protein: 9, carbs: 25, fat: 0.5 },
-    { name: 'שעועית אדומה מבושלת (100 גר\')', protein: 8.7, carbs: 23, fat: 0.5 },
-    { name: 'אפונה מבושלת (100 גר\')', protein: 5.4, carbs: 14, fat: 0.4 },
-    { name: 'פול מבושל (100 גר\')', protein: 7.6, carbs: 18, fat: 0.4 },
-    { name: 'אדממה (100 גר\')', protein: 11, carbs: 10, fat: 5 },
-    // פחמימות ודגנים
-    { name: 'אורז לבן מבושל (100 גר\')', protein: 2.7, carbs: 28, fat: 0.3 },
-    { name: 'אורז מלא מבושל (100 גר\')', protein: 2.6, carbs: 23, fat: 0.9 },
-    { name: 'אורז בסמטי מבושל (100 גר\')', protein: 2.9, carbs: 25, fat: 0.4 },
-    { name: 'קינואה מבושלת (100 גר\')', protein: 4.4, carbs: 21, fat: 1.9 },
-    { name: 'בורגול מבושל (100 גר\')', protein: 3.1, carbs: 19, fat: 0.2 },
-    { name: 'קוסקוס מבושל (100 גר\')', protein: 3.8, carbs: 23, fat: 0.2 },
-    { name: 'פסטה רגילה מבושלת (100 גר\')', protein: 5.8, carbs: 25, fat: 0.9 },
-    { name: 'פסטה מקמח מלא מבושלת (100 גר\')', protein: 5.3, carbs: 23, fat: 1.1 },
-    { name: 'לחם לבן (פרוסה)', protein: 2.7, carbs: 15, fat: 1 },
-    { name: 'לחם מלא (פרוסה)', protein: 3.6, carbs: 14, fat: 1 },
-    { name: 'לחם שיפון (פרוסה)', protein: 2.5, carbs: 15, fat: 0.8 },
-    { name: 'פיתה (יחידה)', protein: 5, carbs: 33, fat: 1 },
-    { name: 'לאפה (יחידה)', protein: 8, carbs: 55, fat: 2 },
-    { name: 'טורטייה (יחידה)', protein: 4, carbs: 22, fat: 3 },
-    { name: 'בייגלה (100 גר\')', protein: 10, carbs: 68, fat: 5 },
-    { name: 'קרקר / פריכיות אורז (2 יחידות)', protein: 0.6, carbs: 7, fat: 0.1 },
-    { name: 'שיבולת שועל יבשה (50 גר\')', protein: 6.75, carbs: 33, fat: 3.5 },
-    { name: 'גרנולה (50 גר\')', protein: 5, carbs: 32, fat: 8 },
-    { name: 'תפוח אדמה אפוי (100 גר\')', protein: 2, carbs: 21, fat: 0.1 },
-    { name: 'תפוח אדמה מבושל (100 גר\')', protein: 2, carbs: 17, fat: 0.1 },
-    { name: 'בטטה אפויה (100 גר\')', protein: 1.6, carbs: 20, fat: 0.1 },
-    { name: 'תירס מתוק (100 גר\')', protein: 3.2, carbs: 19, fat: 1.2 },
-    // מוצרי חלב
-    { name: 'חלב 3% (כוס, 240 מ"ל)', protein: 8, carbs: 11.5, fat: 7.7 },
-    { name: 'חלב 1% (כוס, 240 מ"ל)', protein: 8.3, carbs: 12, fat: 2.5 },
-    { name: 'חלב סויה (כוס, 240 מ"ל)', protein: 7, carbs: 4, fat: 4 },
-    { name: 'חלב שקדים לא ממותק (כוס, 240 מ"ל)', protein: 1, carbs: 1, fat: 2.5 },
-    { name: 'יוגורט טבעי 3% (100 גר\')', protein: 3.5, carbs: 4, fat: 3 },
-    { name: 'יוגורט יווני 2% (100 גר\')', protein: 9, carbs: 4, fat: 2 },
-    { name: 'יוגורט יווני 0% (100 גר\')', protein: 10, carbs: 4, fat: 0.4 },
-    { name: 'לבן / לבנה (100 גר\')', protein: 3, carbs: 4, fat: 3 },
-    { name: 'גבינה לבנה 5% (100 גר\')', protein: 8, carbs: 4, fat: 5 },
-    { name: 'גבינה לבנה 9% (100 גר\')', protein: 8, carbs: 3.5, fat: 9 },
-    { name: 'קוטג\' 5% (100 גר\')', protein: 11, carbs: 3.4, fat: 5 },
-    { name: 'קוטג\' 3% (100 גר\')', protein: 12, carbs: 3.5, fat: 3 },
-    { name: 'גבינה צהובה (פרוסה)', protein: 5, carbs: 0.2, fat: 6 },
-    { name: 'מוצרלה (100 גר\')', protein: 22, carbs: 2.2, fat: 17 },
-    { name: 'פטה (50 גר\')', protein: 4, carbs: 1, fat: 10 },
-    { name: 'גבינת שמנת (כף)', protein: 0.9, carbs: 0.8, fat: 5 },
-    { name: 'חמאה (כף)', protein: 0.1, carbs: 0, fat: 11.5 },
-    // פירות
-    { name: 'בננה (יחידה בינונית)', protein: 1.3, carbs: 27, fat: 0.4 },
-    { name: 'תפוח (יחידה בינונית)', protein: 0.5, carbs: 25, fat: 0.3 },
-    { name: 'תפוז (יחידה בינונית)', protein: 1.2, carbs: 15, fat: 0.2 },
-    { name: 'ענבים (100 גר\')', protein: 0.6, carbs: 18, fat: 0.3 },
-    { name: 'תות שדה (100 גר\')', protein: 0.7, carbs: 7.7, fat: 0.3 },
-    { name: 'אבטיח (200 גר\')', protein: 1.2, carbs: 15, fat: 0.3 },
-    { name: 'מלון (200 גר\')', protein: 1.6, carbs: 16, fat: 0.4 },
-    { name: 'אגס (יחידה בינונית)', protein: 0.6, carbs: 27, fat: 0.2 },
-    { name: 'אננס (100 גר\')', protein: 0.5, carbs: 13, fat: 0.1 },
-    { name: 'קיווי (יחידה)', protein: 0.8, carbs: 10, fat: 0.4 },
-    { name: 'מנגו (100 גר\')', protein: 0.8, carbs: 15, fat: 0.4 },
-    { name: 'אפרסק (יחידה)', protein: 1.4, carbs: 14, fat: 0.3 },
-    { name: 'תמר (יחידה)', protein: 0.2, carbs: 5.3, fat: 0 },
-    { name: 'צימוקים (30 גר\')', protein: 0.9, carbs: 22, fat: 0.1 },
-    // ירקות
-    { name: 'עגבנייה (יחידה בינונית)', protein: 0.9, carbs: 3.9, fat: 0.2 },
-    { name: 'מלפפון (יחידה בינונית)', protein: 0.4, carbs: 2, fat: 0.1 },
-    { name: 'פלפל (יחידה)', protein: 1, carbs: 4.7, fat: 0.3 },
-    { name: 'גזר (יחידה)', protein: 0.6, carbs: 6, fat: 0.2 },
-    { name: 'חסה (100 גר\')', protein: 1.4, carbs: 2.9, fat: 0.2 },
-    { name: 'ברוקולי מבושל (100 גר\')', protein: 2.8, carbs: 6.6, fat: 0.4 },
-    { name: 'כרובית מבושלת (100 גר\')', protein: 1.8, carbs: 4.1, fat: 0.3 },
-    { name: 'קישוא מבושל (100 גר\')', protein: 1.2, carbs: 3.1, fat: 0.3 },
-    { name: 'חציל אפוי (100 גר\')', protein: 1, carbs: 6, fat: 0.2 },
-    { name: 'תרד מבושל (100 גר\')', protein: 3, carbs: 3.6, fat: 0.4 },
-    { name: 'בצל (יחידה)', protein: 0.7, carbs: 6.5, fat: 0.1 },
-    { name: 'שום (2 שיני)', protein: 0.4, carbs: 2, fat: 0 },
-    { name: 'אבוקדו (חצי יחידה)', protein: 2, carbs: 9, fat: 15 },
-    // אגוזים, זרעים ושומנים
-    { name: 'שקדים (10 גר\', כף)', protein: 2.1, carbs: 2.2, fat: 5 },
-    { name: 'אגוזי מלך (10 גר\')', protein: 1.5, carbs: 1.4, fat: 6.5 },
-    { name: 'קשיו (10 גר\')', protein: 1.8, carbs: 3, fat: 4.4 },
-    { name: 'בוטנים (10 גר\')', protein: 2.6, carbs: 1.6, fat: 4.9 },
-    { name: 'פיסטוקים (10 גר\')', protein: 2, carbs: 2.8, fat: 4.5 },
-    { name: 'גרעיני חמניה (10 גר\')', protein: 2.1, carbs: 2, fat: 4.9 },
-    { name: 'גרעיני דלעת (10 גר\')', protein: 3, carbs: 1.4, fat: 4.9 },
-    { name: 'טחינה גולמית (כף)', protein: 2.6, carbs: 3.2, fat: 8.7 },
-    { name: 'חמאת בוטנים (כף)', protein: 4, carbs: 3, fat: 8 },
-    { name: 'שמן זית (כף)', protein: 0, carbs: 0, fat: 14 },
-    { name: 'שמן קנולה (כף)', protein: 0, carbs: 0, fat: 14 },
-    { name: 'זיתים (5 יחידות)', protein: 0.2, carbs: 1, fat: 3.5 },
-    // מוכן / חטיפים / ישראלי
-    { name: 'חומוס מוכן (2 כפות)', protein: 2.5, carbs: 6, fat: 4.5 },
-    { name: 'לבנה עם שמן זית (מנה)', protein: 3.5, carbs: 2.5, fat: 16 },
-    { name: 'שקשוקה (מנה, 2 ביצים)', protein: 14, carbs: 10, fat: 16 },
-    { name: 'שניצל עוף בציפוי (100 גר\')', protein: 20, carbs: 12, fat: 14 },
-    { name: 'קציצות בקר (100 גר\')', protein: 17, carbs: 5, fat: 14 },
-    { name: 'פלאפל (5 כדורים)', protein: 7, carbs: 18, fat: 11 },
-    { name: 'סלט ישראלי (100 גר\')', protein: 1, carbs: 5, fat: 3.5 },
-    { name: 'חטיף אנרגיה / חלבון (יחידה)', protein: 15, carbs: 20, fat: 7 },
-    { name: 'שוקולד מריר 70% (20 גר\')', protein: 2, carbs: 10, fat: 9 },
-    { name: 'דבש (כף)', protein: 0.1, carbs: 17, fat: 0 },
-    { name: 'ריבה (כף)', protein: 0.1, carbs: 13, fat: 0 },
-    { name: 'קורנפלקס (30 גר\')', protein: 1.5, carbs: 25, fat: 0.3 },
-    { name: 'פופקורן טבעי (20 גר\')', protein: 2.2, carbs: 15, fat: 1 }
-  ];
+  const LS_SEEDED = 'nutri_seeded_v2';
+  const CATEGORY_LABELS = {
+    custom: 'המאכלים שלי',
+    protein: 'בשר, עוף, דגים וחלבון',
+    legumes: 'קטניות',
+    carbs: 'פחמימות ודגנים',
+    dairy: 'מוצרי חלב',
+    fruit: 'פירות',
+    veg: 'ירקות',
+    nuts: 'אגוזים, זרעים ושומנים',
+    prepared: 'מוכן וישראלי'
+  };
+  const CATEGORY_ORDER = ['custom','protein','legumes','carbs','dairy','fruit','veg','nuts','prepared'];
+
+  const UNIT_GRAMS = {
+    'ביצה (יחידה)': 50,
+    'חלבון ביצה בלבד (יחידה)': 33,
+    'נקניקיות עוף (יחידה)': 50,
+    'פסטרמה (2 פרוסות)': 40,
+    'לחם לבן (פרוסה)': 30,
+    'לחם מלא (פרוסה)': 30,
+    'לחם שיפון (פרוסה)': 30,
+    'פיתה (יחידה)': 60,
+    'לאפה (יחידה)': 100,
+    'טורטייה (יחידה)': 45,
+    'קרקר / פריכיות אורז (2 יחידות)': 10,
+    'בננה (יחידה בינונית)': 120,
+    'תפוח (יחידה בינונית)': 180,
+    'תפוז (יחידה בינונית)': 180,
+    'אגס (יחידה בינונית)': 180,
+    'קיווי (יחידה)': 75,
+    'אפרסק (יחידה)': 150,
+    'תמר (יחידה)': 8,
+    'אבוקדו (חצי יחידה)': 100,
+    'עגבנייה (יחידה בינונית)': 120,
+    'מלפפון (יחידה בינונית)': 100,
+    'פלפל (יחידה)': 120,
+    'גזר (יחידה)': 60,
+    'בצל (יחידה)': 110,
+    'שום (2 שיני)': 6,
+    'זיתים (5 יחידות)': 25,
+    'טחינה גולמית (כף)': 15,
+    'חמאת בוטנים (כף)': 16,
+    'שמן זית (כף)': 14,
+    'שמן קנולה (כף)': 14,
+    'דבש (כף)': 21,
+    'ריבה (כף)': 20,
+    'גבינת שמנת (כף)': 15,
+    'חמאה (כף)': 14,
+    'חומוס מוכן (2 כפות)': 30,
+    'לבנה עם שמן זית (מנה)': 65,
+    'שקשוקה (מנה, 2 ביצים)': 250,
+    'פלאפל (5 כדורים)': 90,
+    'חטיף אנרגיה / חלבון (יחידה)': 45
+  };
+  function parseBaseGrams(name){
+    const mG = name.match(/(\d+(?:\.\d+)?)\s*גר/);
+    if (mG) return parseFloat(mG[1]);
+    const mMl = name.match(/(\d+(?:\.\d+)?)\s*מ"ל/);
+    if (mMl) return parseFloat(mMl[1]);
+    if (UNIT_GRAMS[name] != null) return UNIT_GRAMS[name];
+    return 100;
+  }
+
+  const FOOD_CATEGORIES = {
+    protein: [
+      { name: 'ביצה (יחידה)', protein: 6, carbs: 0.5, fat: 5 },
+      { name: 'חלבון ביצה בלבד (יחידה)', protein: 3.5, carbs: 0.2, fat: 0 },
+      { name: 'חזה עוף מבושל (100 גר\')', protein: 31, carbs: 0, fat: 3.6 },
+      { name: 'שוק/ירך עוף עם עור מבושל (100 גר\')', protein: 26, carbs: 0, fat: 11 },
+      { name: 'כרעיים עוף ללא עור מבושל (100 גר\')', protein: 27, carbs: 0, fat: 8 },
+      { name: 'הודו טחון מבושל (100 גר\')', protein: 27, carbs: 0, fat: 8 },
+      { name: 'בשר בקר טחון 5% מבושל (100 גר\')', protein: 26, carbs: 0, fat: 5 },
+      { name: 'בשר בקר טחון 10% מבושל (100 גר\')', protein: 26, carbs: 0, fat: 10 },
+      { name: 'בשר בקר טחון 20% מבושל (100 גר\')', protein: 23, carbs: 0, fat: 20 },
+      { name: 'אנטריקוט בקר (100 גר\')', protein: 25, carbs: 0, fat: 18 },
+      { name: 'פילה בקר (100 גר\')', protein: 27, carbs: 0, fat: 8 },
+      { name: 'כבש / טלה (100 גר\')', protein: 25, carbs: 0, fat: 17 },
+      { name: 'סלמון אפוי (100 גר\')', protein: 25, carbs: 0, fat: 13 },
+      { name: 'טונה בשימורים במים (100 גר\')', protein: 26, carbs: 0, fat: 1 },
+      { name: 'טונה בשימורים בשמן (100 גר\')', protein: 25, carbs: 0, fat: 8 },
+      { name: 'דניס / לברק אפוי (100 גר\')', protein: 24, carbs: 0, fat: 3 },
+      { name: 'קוד / בקלה מבושל (100 גר\')', protein: 23, carbs: 0, fat: 1 },
+      { name: 'שרימפס מבושל (100 גר\')', protein: 24, carbs: 0.2, fat: 1 },
+      { name: 'נקניקיות עוף (יחידה)', protein: 8, carbs: 1, fat: 9 },
+      { name: 'נקניק בקר (100 גר\')', protein: 14, carbs: 2, fat: 26 },
+      { name: 'פסטרמה (2 פרוסות)', protein: 10, carbs: 0.5, fat: 3 },
+      { name: 'טופו (100 גר\')', protein: 8, carbs: 2, fat: 4.8 },
+      { name: 'טמפה (100 גר\')', protein: 19, carbs: 9, fat: 11 },
+      { name: 'סייטן (100 גר\')', protein: 25, carbs: 4, fat: 2 }
+    ],
+    legumes: [
+      { name: 'עדשים מבושלות (100 גר\')', protein: 9, carbs: 20, fat: 0.4 },
+      { name: 'חומוס מבושל (100 גר\')', protein: 8.9, carbs: 27, fat: 2.6 },
+      { name: 'שעועית לבנה מבושלת (100 גר\')', protein: 9, carbs: 25, fat: 0.5 },
+      { name: 'שעועית אדומה מבושלת (100 גר\')', protein: 8.7, carbs: 23, fat: 0.5 },
+      { name: 'אפונה מבושלת (100 גר\')', protein: 5.4, carbs: 14, fat: 0.4 },
+      { name: 'פול מבושל (100 גר\')', protein: 7.6, carbs: 18, fat: 0.4 },
+      { name: 'אדממה (100 גר\')', protein: 11, carbs: 10, fat: 5 }
+    ],
+    carbs: [
+      { name: 'אורז לבן מבושל (100 גר\')', protein: 2.7, carbs: 28, fat: 0.3 },
+      { name: 'אורז מלא מבושל (100 גר\')', protein: 2.6, carbs: 23, fat: 0.9 },
+      { name: 'אורז בסמטי מבושל (100 גר\')', protein: 2.9, carbs: 25, fat: 0.4 },
+      { name: 'קינואה מבושלת (100 גר\')', protein: 4.4, carbs: 21, fat: 1.9 },
+      { name: 'בורגול מבושל (100 גר\')', protein: 3.1, carbs: 19, fat: 0.2 },
+      { name: 'קוסקוס מבושל (100 גר\')', protein: 3.8, carbs: 23, fat: 0.2 },
+      { name: 'פסטה רגילה מבושלת (100 גר\')', protein: 5.8, carbs: 25, fat: 0.9 },
+      { name: 'פסטה מקמח מלא מבושלת (100 גר\')', protein: 5.3, carbs: 23, fat: 1.1 },
+      { name: 'לחם לבן (פרוסה)', protein: 2.7, carbs: 15, fat: 1 },
+      { name: 'לחם מלא (פרוסה)', protein: 3.6, carbs: 14, fat: 1 },
+      { name: 'לחם שיפון (פרוסה)', protein: 2.5, carbs: 15, fat: 0.8 },
+      { name: 'פיתה (יחידה)', protein: 5, carbs: 33, fat: 1 },
+      { name: 'לאפה (יחידה)', protein: 8, carbs: 55, fat: 2 },
+      { name: 'טורטייה (יחידה)', protein: 4, carbs: 22, fat: 3 },
+      { name: 'בייגלה (100 גר\')', protein: 10, carbs: 68, fat: 5 },
+      { name: 'קרקר / פריכיות אורז (2 יחידות)', protein: 0.6, carbs: 7, fat: 0.1 },
+      { name: 'שיבולת שועל יבשה (50 גר\')', protein: 6.75, carbs: 33, fat: 3.5 },
+      { name: 'גרנולה (50 גר\')', protein: 5, carbs: 32, fat: 8 },
+      { name: 'תפוח אדמה אפוי (100 גר\')', protein: 2, carbs: 21, fat: 0.1 },
+      { name: 'תפוח אדמה מבושל (100 גר\')', protein: 2, carbs: 17, fat: 0.1 },
+      { name: 'בטטה אפויה (100 גר\')', protein: 1.6, carbs: 20, fat: 0.1 },
+      { name: 'תירס מתוק (100 גר\')', protein: 3.2, carbs: 19, fat: 1.2 }
+    ],
+    dairy: [
+      { name: 'חלב 3% (כוס, 240 מ"ל)', protein: 8, carbs: 11.5, fat: 7.7 },
+      { name: 'חלב 1% (כוס, 240 מ"ל)', protein: 8.3, carbs: 12, fat: 2.5 },
+      { name: 'חלב סויה (כוס, 240 מ"ל)', protein: 7, carbs: 4, fat: 4 },
+      { name: 'חלב שקדים לא ממותק (כוס, 240 מ"ל)', protein: 1, carbs: 1, fat: 2.5 },
+      { name: 'יוגורט טבעי 3% (100 גר\')', protein: 3.5, carbs: 4, fat: 3 },
+      { name: 'יוגורט יווני 2% (100 גר\')', protein: 9, carbs: 4, fat: 2 },
+      { name: 'יוגורט יווני 0% (100 גר\')', protein: 10, carbs: 4, fat: 0.4 },
+      { name: 'לבן / לבנה (100 גר\')', protein: 3, carbs: 4, fat: 3 },
+      { name: 'גבינה לבנה 5% (100 גר\')', protein: 8, carbs: 4, fat: 5 },
+      { name: 'גבינה לבנה 9% (100 גר\')', protein: 8, carbs: 3.5, fat: 9 },
+      { name: 'קוטג\' 5% (100 גר\')', protein: 11, carbs: 3.4, fat: 5 },
+      { name: 'קוטג\' 3% (100 גר\')', protein: 12, carbs: 3.5, fat: 3 },
+      { name: 'גבינה צהובה (פרוסה)', protein: 5, carbs: 0.2, fat: 6 },
+      { name: 'מוצרלה (100 גר\')', protein: 22, carbs: 2.2, fat: 17 },
+      { name: 'פטה (50 גר\')', protein: 4, carbs: 1, fat: 10 },
+      { name: 'גבינת שמנת (כף)', protein: 0.9, carbs: 0.8, fat: 5 },
+      { name: 'חמאה (כף)', protein: 0.1, carbs: 0, fat: 11.5 }
+    ],
+    fruit: [
+      { name: 'בננה (יחידה בינונית)', protein: 1.3, carbs: 27, fat: 0.4 },
+      { name: 'תפוח (יחידה בינונית)', protein: 0.5, carbs: 25, fat: 0.3 },
+      { name: 'תפוז (יחידה בינונית)', protein: 1.2, carbs: 15, fat: 0.2 },
+      { name: 'ענבים (100 גר\')', protein: 0.6, carbs: 18, fat: 0.3 },
+      { name: 'תות שדה (100 גר\')', protein: 0.7, carbs: 7.7, fat: 0.3 },
+      { name: 'אבטיח (200 גר\')', protein: 1.2, carbs: 15, fat: 0.3 },
+      { name: 'מלון (200 גר\')', protein: 1.6, carbs: 16, fat: 0.4 },
+      { name: 'אגס (יחידה בינונית)', protein: 0.6, carbs: 27, fat: 0.2 },
+      { name: 'אננס (100 גר\')', protein: 0.5, carbs: 13, fat: 0.1 },
+      { name: 'קיווי (יחידה)', protein: 0.8, carbs: 10, fat: 0.4 },
+      { name: 'מנגו (100 גר\')', protein: 0.8, carbs: 15, fat: 0.4 },
+      { name: 'אפרסק (יחידה)', protein: 1.4, carbs: 14, fat: 0.3 },
+      { name: 'תמר (יחידה)', protein: 0.2, carbs: 5.3, fat: 0 },
+      { name: 'צימוקים (30 גר\')', protein: 0.9, carbs: 22, fat: 0.1 }
+    ],
+    veg: [
+      { name: 'עגבנייה (יחידה בינונית)', protein: 0.9, carbs: 3.9, fat: 0.2 },
+      { name: 'מלפפון (יחידה בינונית)', protein: 0.4, carbs: 2, fat: 0.1 },
+      { name: 'פלפל (יחידה)', protein: 1, carbs: 4.7, fat: 0.3 },
+      { name: 'גזר (יחידה)', protein: 0.6, carbs: 6, fat: 0.2 },
+      { name: 'חסה (100 גר\')', protein: 1.4, carbs: 2.9, fat: 0.2 },
+      { name: 'ברוקולי מבושל (100 גר\')', protein: 2.8, carbs: 6.6, fat: 0.4 },
+      { name: 'כרובית מבושלת (100 גר\')', protein: 1.8, carbs: 4.1, fat: 0.3 },
+      { name: 'קישוא מבושל (100 גר\')', protein: 1.2, carbs: 3.1, fat: 0.3 },
+      { name: 'חציל אפוי (100 גר\')', protein: 1, carbs: 6, fat: 0.2 },
+      { name: 'תרד מבושל (100 גר\')', protein: 3, carbs: 3.6, fat: 0.4 },
+      { name: 'בצל (יחידה)', protein: 0.7, carbs: 6.5, fat: 0.1 },
+      { name: 'שום (2 שיני)', protein: 0.4, carbs: 2, fat: 0 },
+      { name: 'אבוקדו (חצי יחידה)', protein: 2, carbs: 9, fat: 15 }
+    ],
+    nuts: [
+      { name: 'שקדים (10 גר\', כף)', protein: 2.1, carbs: 2.2, fat: 5 },
+      { name: 'אגוזי מלך (10 גר\')', protein: 1.5, carbs: 1.4, fat: 6.5 },
+      { name: 'קשיו (10 גר\')', protein: 1.8, carbs: 3, fat: 4.4 },
+      { name: 'בוטנים (10 גר\')', protein: 2.6, carbs: 1.6, fat: 4.9 },
+      { name: 'פיסטוקים (10 גר\')', protein: 2, carbs: 2.8, fat: 4.5 },
+      { name: 'גרעיני חמניה (10 גר\')', protein: 2.1, carbs: 2, fat: 4.9 },
+      { name: 'גרעיני דלעת (10 גר\')', protein: 3, carbs: 1.4, fat: 4.9 },
+      { name: 'טחינה גולמית (כף)', protein: 2.6, carbs: 3.2, fat: 8.7 },
+      { name: 'חמאת בוטנים (כף)', protein: 4, carbs: 3, fat: 8 },
+      { name: 'שמן זית (כף)', protein: 0, carbs: 0, fat: 14 },
+      { name: 'שמן קנולה (כף)', protein: 0, carbs: 0, fat: 14 },
+      { name: 'זיתים (5 יחידות)', protein: 0.2, carbs: 1, fat: 3.5 }
+    ],
+    prepared: [
+      { name: 'חומוס מוכן (2 כפות)', protein: 2.5, carbs: 6, fat: 4.5 },
+      { name: 'לבנה עם שמן זית (מנה)', protein: 3.5, carbs: 2.5, fat: 16 },
+      { name: 'שקשוקה (מנה, 2 ביצים)', protein: 14, carbs: 10, fat: 16 },
+      { name: 'שניצל עוף בציפוי (100 גר\')', protein: 20, carbs: 12, fat: 14 },
+      { name: 'קציצות בקר (100 גר\')', protein: 17, carbs: 5, fat: 14 },
+      { name: 'פלאפל (5 כדורים)', protein: 7, carbs: 18, fat: 11 },
+      { name: 'סלט ישראלי (100 גר\')', protein: 1, carbs: 5, fat: 3.5 },
+      { name: 'חטיף אנרגיה / חלבון (יחידה)', protein: 15, carbs: 20, fat: 7 },
+      { name: 'שוקולד מריר 70% (20 גר\')', protein: 2, carbs: 10, fat: 9 },
+      { name: 'דבש (כף)', protein: 0.1, carbs: 17, fat: 0 },
+      { name: 'ריבה (כף)', protein: 0.1, carbs: 13, fat: 0 },
+      { name: 'קורנפלקס (30 גר\')', protein: 1.5, carbs: 25, fat: 0.3 },
+      { name: 'פופקורן טבעי (20 גר\')', protein: 2.2, carbs: 15, fat: 1 }
+    ]
+  };
+  const DEFAULT_FOODS = Object.keys(FOOD_CATEGORIES).flatMap(cat =>
+    FOOD_CATEGORIES[cat].map(f => ({ ...f, category: cat, baseGrams: parseBaseGrams(f.name) }))
+  );
   function seedDefaultFoods(){
     if (localStorage.getItem(LS_SEEDED)) return;
     DEFAULT_FOODS.forEach(f => {
       if (!savedFoods.some(x => x.name === f.name)) {
-        savedFoods.push({ id: Date.now() + Math.random(), name: f.name, protein: f.protein, carbs: f.carbs, fat: f.fat });
+        savedFoods.push({ id: Date.now() + Math.random(), name: f.name, protein: f.protein, carbs: f.carbs, fat: f.fat, calories: null, category: f.category, baseGrams: f.baseGrams });
       }
     });
     localStorage.setItem(LS_SEEDED, '1');
     saveAll();
+  }
+  function migrateBaseGrams(){
+    let changed = false;
+    savedFoods.forEach(f => {
+      if (f.baseGrams == null) {
+        const def = DEFAULT_FOODS.find(d => d.name === f.name);
+        f.baseGrams = def ? def.baseGrams : 100;
+        changed = true;
+      }
+    });
+    if (changed) saveAll();
   }
 
   const ACTIVITY_FACTORS = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725, veryActive:1.9 };
@@ -669,6 +808,8 @@
     $('inMuscle').value = profile.muscle;
     $('inActivity').value = profile.activity;
     $('inDeficit').value = profile.deficit;
+    $('inGoalWeight').value = profile.goalWeight || '';
+    $('inGoalFat').value = profile.goalFat || '';
     $('inApiKey').value = localStorage.getItem(LS_API_KEY) || '';
   }
 
@@ -701,11 +842,15 @@
     const muscle = parseFloat($('inMuscle').value);
     const activity = $('inActivity').value;
     const deficit = $('inDeficit').value;
+    const goalWeightVal = parseFloat($('inGoalWeight').value);
+    const goalWeight = goalWeightVal > 0 ? goalWeightVal : null;
+    const goalFatVal = parseFloat($('inGoalFat').value);
+    const goalFat = goalFatVal > 0 ? goalFatVal : null;
     if (!height || !weight || !fat || fat <= 0 || fat >= 70) {
       alert('נא למלא גובה, משקל ואחוז שומן תקינים');
       return;
     }
-    profile = { height, weight, fat, muscle: muscle || 0, activity, deficit };
+    profile = { height, weight, fat, muscle: muscle || 0, activity, deficit, goalWeight, goalFat };
     saveAll();
 
     const dstr = todayStr();
@@ -747,11 +892,14 @@
 
   // ---------- FOOD LOG ----------
   function getDayLog(dstr){ return logs[dstr] || []; }
+  function entryCal(it){
+    return (it.calories != null && it.calories > 0) ? it.calories : (it.protein*4 + it.carbs*4 + it.fat*9);
+  }
   function daySums(dstr){
     const items = getDayLog(dstr);
     return items.reduce((acc, it) => {
       acc.protein += it.protein; acc.carbs += it.carbs; acc.fat += it.fat;
-      acc.cal += it.protein*4 + it.carbs*4 + it.fat*9;
+      acc.cal += entryCal(it);
       return acc;
     }, { protein:0, carbs:0, fat:0, cal:0 });
   }
@@ -760,78 +908,121 @@
     const p = parseFloat($('foodProtein').value) || 0;
     const c = parseFloat($('foodCarbs').value) || 0;
     const f = parseFloat($('foodFat').value) || 0;
-    $('foodCalPreview').textContent = fmt(p*4 + c*4 + f*9);
+    const calOverride = parseFloat($('foodCalories').value) || 0;
+    $('foodCalPreview').textContent = fmt(calOverride > 0 ? calOverride : (p*4 + c*4 + f*9));
   }
-  ['foodProtein','foodCarbs','foodFat'].forEach(id => $(id).addEventListener('input', updateFoodPreview));
+  ['foodProtein','foodCarbs','foodFat','foodCalories'].forEach(id => $(id).addEventListener('input', updateFoodPreview));
 
   $('addFoodBtn').addEventListener('click', () => {
     const name = $('foodName').value.trim() || 'מאכל';
     const protein = parseFloat($('foodProtein').value) || 0;
     const carbs = parseFloat($('foodCarbs').value) || 0;
     const fat = parseFloat($('foodFat').value) || 0;
-    if (protein === 0 && carbs === 0 && fat === 0) { alert('הזן לפחות ערך אחד גדול מ-0'); return; }
+    const calOverrideVal = parseFloat($('foodCalories').value) || 0;
+    const calories = calOverrideVal > 0 ? calOverrideVal : null;
+    if (protein === 0 && carbs === 0 && fat === 0 && !calories) { alert('הזן לפחות ערך אחד גדול מ-0 (מאקרו או קלוריות)'); return; }
     const dstr = todayStr();
     if (!logs[dstr]) logs[dstr] = [];
-    logs[dstr].push({ id: Date.now(), name, protein, carbs, fat, time: new Date().toTimeString().slice(0,5) });
+    logs[dstr].push({ id: Date.now(), name, protein, carbs, fat, calories, time: new Date().toTimeString().slice(0,5) });
     if ($('saveToListCheck').checked) {
-      addToSavedFoods(name, protein, carbs, fat);
+      const bg = parseFloat($('foodBaseGrams').value) || 100;
+      addToSavedFoods(name, protein, carbs, fat, calories, 'custom', bg);
     }
     saveAll();
     $('foodName').value = '';
-    $('foodProtein').value = 0; $('foodCarbs').value = 0; $('foodFat').value = 0;
+    $('foodProtein').value = 0; $('foodCarbs').value = 0; $('foodFat').value = 0; $('foodCalories').value = '';
     $('saveToListCheck').checked = false;
+    $('foodBaseGrams').value = 100;
     updateFoodPreview();
     renderAll();
   });
 
   // ---------- SAVED FOODS LIBRARY ----------
-  function addToSavedFoods(name, protein, carbs, fat){
+  let expandedCats = new Set();
+
+  function addToSavedFoods(name, protein, carbs, fat, calories, category, baseGrams){
+    const cat = category || 'custom';
+    const bg = baseGrams > 0 ? baseGrams : 100;
     const existing = savedFoods.find(f => f.name === name);
     if (existing) {
-      existing.protein = protein; existing.carbs = carbs; existing.fat = fat;
+      existing.protein = protein; existing.carbs = carbs; existing.fat = fat; existing.calories = calories || null; existing.baseGrams = bg;
     } else {
-      savedFoods.push({ id: Date.now(), name, protein, carbs, fat });
+      savedFoods.push({ id: Date.now(), name, protein, carbs, fat, calories: calories || null, category: cat, baseGrams: bg });
     }
-    if (savedFoods.length > 200) savedFoods = savedFoods.slice(-200);
+    if (savedFoods.length > 300) savedFoods = savedFoods.slice(-300);
   }
 
-  function renderSavedFoods(){
-    const q = ($('savedFoodSearch').value || '').trim().toLowerCase();
-    const list = $('savedFoodsList');
-    const items = savedFoods
-      .filter(f => !q || f.name.toLowerCase().includes(q))
-      .sort((a,b) => a.name.localeCompare(b.name, 'he'));
-    if (items.length === 0) {
-      list.innerHTML = `<div class="empty-note">${savedFoods.length === 0 ? 'המאגר ריק — צלם תווית או שמור מאכל שהזנת ידנית' : 'לא נמצאו תוצאות עבור החיפוש'}</div>`;
-      return;
-    }
-    list.innerHTML = items.map(f => {
-      const cal = Math.round(f.protein*4 + f.carbs*4 + f.fat*9);
-      return `<div class="saved-food-item" data-id="${f.id}">
-        <div>
-          <div class="name">${escapeHtml(f.name)}</div>
-          <div class="macros">חל׳ ${f.protein} · פחמ׳ ${f.carbs} · שומן ${f.fat} · ${cal} קק״ל</div>
+  function foodRowHtml(f){
+    const base = f.baseGrams || 100;
+    const cal = (f.calories != null && f.calories > 0) ? Math.round(f.calories) : Math.round(f.protein*4 + f.carbs*4 + f.fat*9);
+    return `<div class="saved-food-item" data-id="${f.id}">
+      <div>
+        <div class="name">${escapeHtml(f.name)}</div>
+        <div class="macros">ל-${base} גר׳: חל׳ ${f.protein} · פחמ׳ ${f.carbs} · שומן ${f.fat} · ${cal} קק״ל${f.calories!=null?' (ידני)':''}</div>
+      </div>
+      <button class="del" data-del="${f.id}" title="הסר מהמאגר">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      </button>
+    </div>`;
+  }
+
+  function renderQtyPicker(f){
+    const base = f.baseGrams || 100;
+    $('qtyPickerBox').innerHTML = `
+      <div class="card review-card" style="margin-bottom:12px;">
+        <div style="font-weight:700; font-size:14.5px; margin-bottom:10px;">${escapeHtml(f.name)}</div>
+        <div class="field"><label>כמות שאכלת (גר׳)</label><input type="number" id="qtyGrams" value="${base}" inputmode="decimal" step="1"></div>
+        <div class="cal-preview" id="qtyPreview" style="margin-top:8px;"></div>
+        <div class="review-actions">
+          <button class="btn btn-ghost" id="qtyCancel">ביטול</button>
+          <button class="btn btn-primary" id="qtyAddToday">הוסף להיום</button>
         </div>
-        <button class="del" data-del="${f.id}" title="הסר מהמאגר">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        </button>
       </div>`;
-    }).join('');
-    list.querySelectorAll('.saved-food-item').forEach(row => {
+
+    const computeScaled = () => {
+      const grams = parseFloat($('qtyGrams').value) || 0;
+      const factor = base > 0 ? grams / base : 0;
+      const p = Math.round(f.protein * factor * 10) / 10;
+      const c = Math.round(f.carbs * factor * 10) / 10;
+      const ft = Math.round(f.fat * factor * 10) / 10;
+      const cal = (f.calories != null && f.calories > 0) ? Math.round(f.calories * factor) : Math.round(p*4 + c*4 + ft*9);
+      return { grams, p, c, ft, cal };
+    };
+    const updatePreview = () => {
+      const { p, c, ft, cal } = computeScaled();
+      $('qtyPreview').innerHTML = `חלבון <b>${p}</b> גר׳ · פחמ׳ <b>${c}</b> גר׳ · שומן <b>${ft}</b> גר׳ · <b>${fmt(cal)}</b> קק״ל`;
+    };
+    $('qtyGrams').addEventListener('input', updatePreview);
+    updatePreview();
+
+    $('qtyCancel').addEventListener('click', () => { $('qtyPickerBox').innerHTML = ''; });
+
+    $('qtyAddToday').addEventListener('click', () => {
+      const { grams, p, c, ft, cal } = computeScaled();
+      if (!grams || grams <= 0) { alert('הזן כמות בגרמים גדולה מ-0'); return; }
+      const dstr = todayStr();
+      if (!logs[dstr]) logs[dstr] = [];
+      const calOverride = (f.calories != null && f.calories > 0) ? cal : null;
+      logs[dstr].push({ id: Date.now(), name: `${f.name} · ${grams} גר׳`, protein: p, carbs: c, fat: ft, calories: calOverride, time: new Date().toTimeString().slice(0,5) });
+      saveAll();
+      $('qtyPickerBox').innerHTML = '';
+      renderAll();
+    });
+
+    $('qtyPickerBox').scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+
+  function attachFoodRowHandlers(container){
+    container.querySelectorAll('.saved-food-item').forEach(row => {
       row.addEventListener('click', (e) => {
         if (e.target.closest('.del')) return;
         const id = Number(row.dataset.id);
         const f = savedFoods.find(x => x.id === id);
         if (!f) return;
-        $('foodName').value = f.name;
-        $('foodProtein').value = f.protein;
-        $('foodCarbs').value = f.carbs;
-        $('foodFat').value = f.fat;
-        updateFoodPreview();
-        $('foodName').scrollIntoView({ behavior:'smooth', block:'center' });
+        renderQtyPicker(f);
       });
     });
-    list.querySelectorAll('[data-del]').forEach(btn => {
+    container.querySelectorAll('[data-del]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const id = Number(btn.dataset.del);
@@ -840,6 +1031,59 @@
         renderSavedFoods();
       });
     });
+  }
+
+  function renderSavedFoods(){
+    const q = ($('savedFoodSearch').value || '').trim().toLowerCase();
+    const list = $('savedFoodsList');
+
+    if (q) {
+      const items = savedFoods
+        .filter(f => f.name.toLowerCase().includes(q))
+        .sort((a,b) => a.name.localeCompare(b.name, 'he'));
+      if (items.length === 0) {
+        list.innerHTML = `<div class="empty-note">לא נמצאו תוצאות עבור החיפוש</div>`;
+        return;
+      }
+      list.innerHTML = items.map(foodRowHtml).join('');
+      attachFoodRowHandlers(list);
+      return;
+    }
+
+    if (savedFoods.length === 0) {
+      list.innerHTML = `<div class="empty-note">המאגר ריק — צלם תווית או שמור מאכל שהזנת ידנית</div>`;
+      return;
+    }
+
+    const groups = {};
+    savedFoods.forEach(f => {
+      const cat = f.category || 'custom';
+      (groups[cat] = groups[cat] || []).push(f);
+    });
+    const catsPresent = CATEGORY_ORDER.filter(c => groups[c] && groups[c].length);
+
+    list.innerHTML = catsPresent.map(catKey => {
+      const items = groups[catKey].slice().sort((a,b) => a.name.localeCompare(b.name, 'he'));
+      const open = expandedCats.has(catKey);
+      return `<div class="food-category">
+        <div class="food-cat-header ${open?'open':''}" data-cat="${catKey}">
+          <div class="cat-name">${CATEGORY_LABELS[catKey] || catKey}<span class="cat-count">(${items.length})</span></div>
+          <div class="chev">⌄</div>
+        </div>
+        <div class="food-cat-items ${open?'open':''}" data-catitems="${catKey}">
+          ${items.map(foodRowHtml).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('.food-cat-header').forEach(h => {
+      h.addEventListener('click', () => {
+        const cat = h.dataset.cat;
+        if (expandedCats.has(cat)) expandedCats.delete(cat); else expandedCats.add(cat);
+        renderSavedFoods();
+      });
+    });
+    attachFoodRowHandlers(list);
   }
   $('savedFoodSearch').addEventListener('input', renderSavedFoods);
 
@@ -968,8 +1212,10 @@
           <div class="field"><label>פחמימות (גר׳)</label><input type="number" id="rvCarbs" inputmode="decimal" step="0.1" value="${carbs}"></div>
           <div class="field"><label>שומן (גר׳)</label><input type="number" id="rvFat" inputmode="decimal" step="0.1" value="${fat}"></div>
         </div>
+        <div class="field"><label>קלוריות (אופציונלי — לדריסת החישוב מהמאקרו)</label><input type="number" id="rvCalories" inputmode="decimal" step="1" placeholder="השאר ריק לחישוב אוטומטי"></div>
         <div class="cal-preview">בערך <b id="rvCalPreview">${cal}</b> קק״ל</div>
         ${mode === 'label' ? `<div class="checkbox-row"><input type="checkbox" id="rvAlsoToday"><label for="rvAlsoToday">הוסף גם ליומן של היום</label></div>` : `<div class="checkbox-row"><input type="checkbox" id="rvAlsoSave" checked><label for="rvAlsoSave">שמור גם במאגר המאכלים שלי</label></div>`}
+        <div class="field"><label>הערכים הנ״ל מתייחסים לכמות של (גר׳)</label><input type="number" id="rvBaseGrams" inputmode="decimal" step="1" value="100"></div>
         <div class="review-actions">
           <button class="btn btn-ghost" id="rvCancel">ביטול</button>
           <button class="btn btn-primary" id="rvConfirm">${primaryLabel}</button>
@@ -980,9 +1226,10 @@
       const p = parseFloat($('rvProtein').value) || 0;
       const c = parseFloat($('rvCarbs').value) || 0;
       const f = parseFloat($('rvFat').value) || 0;
-      $('rvCalPreview').textContent = fmt(p*4 + c*4 + f*9);
+      const calOverride = parseFloat($('rvCalories').value) || 0;
+      $('rvCalPreview').textContent = fmt(calOverride > 0 ? calOverride : (p*4 + c*4 + f*9));
     };
-    ['rvProtein','rvCarbs','rvFat'].forEach(id => $(id).addEventListener('input', recalc));
+    ['rvProtein','rvCarbs','rvFat','rvCalories'].forEach(id => $(id).addEventListener('input', recalc));
 
     $('rvCancel').addEventListener('click', () => { $('reviewCard').innerHTML = ''; });
 
@@ -991,20 +1238,23 @@
       const finalProtein = parseFloat($('rvProtein').value) || 0;
       const finalCarbs = parseFloat($('rvCarbs').value) || 0;
       const finalFat = parseFloat($('rvFat').value) || 0;
+      const calOverrideVal = parseFloat($('rvCalories').value) || 0;
+      const finalCalories = calOverrideVal > 0 ? calOverrideVal : null;
+      const finalBaseGrams = parseFloat($('rvBaseGrams').value) || 100;
 
       if (mode === 'label') {
-        addToSavedFoods(finalName, finalProtein, finalCarbs, finalFat);
+        addToSavedFoods(finalName, finalProtein, finalCarbs, finalFat, finalCalories, 'custom', finalBaseGrams);
         if ($('rvAlsoToday') && $('rvAlsoToday').checked) {
           const dstr = todayStr();
           if (!logs[dstr]) logs[dstr] = [];
-          logs[dstr].push({ id: Date.now(), name: finalName, protein: finalProtein, carbs: finalCarbs, fat: finalFat, time: new Date().toTimeString().slice(0,5) });
+          logs[dstr].push({ id: Date.now(), name: finalName, protein: finalProtein, carbs: finalCarbs, fat: finalFat, calories: finalCalories, time: new Date().toTimeString().slice(0,5) });
         }
       } else {
         const dstr = todayStr();
         if (!logs[dstr]) logs[dstr] = [];
-        logs[dstr].push({ id: Date.now(), name: finalName, protein: finalProtein, carbs: finalCarbs, fat: finalFat, time: new Date().toTimeString().slice(0,5) });
+        logs[dstr].push({ id: Date.now(), name: finalName, protein: finalProtein, carbs: finalCarbs, fat: finalFat, calories: finalCalories, time: new Date().toTimeString().slice(0,5) });
         if ($('rvAlsoSave') && $('rvAlsoSave').checked) {
-          addToSavedFoods(finalName, finalProtein, finalCarbs, finalFat);
+          addToSavedFoods(finalName, finalProtein, finalCarbs, finalFat, finalCalories, 'custom', finalBaseGrams);
         }
       }
       saveAll();
@@ -1052,11 +1302,11 @@
       return;
     }
     list.innerHTML = items.map(it => {
-      const cal = Math.round(it.protein*4 + it.carbs*4 + it.fat*9);
+      const cal = Math.round(entryCal(it));
       return `<div class="log-item">
         <div>
           <div class="name">${escapeHtml(it.name)}</div>
-          <div class="macros">חל׳ ${it.protein} · פחמ׳ ${it.carbs} · שומן ${it.fat} · ${it.time || ''}</div>
+          <div class="macros">חל׳ ${it.protein} · פחמ׳ ${it.carbs} · שומן ${it.fat} · ${it.time || ''}${it.calories!=null?' · קלוריות ידניות':''}</div>
         </div>
         <div class="cal">${fmt(cal)} קק״ל</div>
         ${editable ? `<button class="del" data-id="${it.id}" title="מחק">
@@ -1189,6 +1439,89 @@
     box('trendMuscle','trendMuscleD', last.muscle, prev ? prev.muscle : null, '%', false);
   }
 
+  // ---------- GOAL PROGRESS ----------
+  function renderGoalBox(opts){
+    const { boxId, startId, currentId, targetId, fillId, remainId, pctId, goalVal, historyKey, unit, remainLabel } = opts;
+    const box = $(boxId);
+    if (!goalVal || bodyHist.length === 0) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+
+    const start = bodyHist[0][historyKey];
+    const current = bodyHist[bodyHist.length - 1][historyKey];
+    const totalToLose = start - goalVal;
+    const lostSoFar = start - current;
+    let pct;
+    if (Math.abs(totalToLose) > 0.05) pct = Math.max(0, Math.min(100, (lostSoFar / totalToLose) * 100));
+    else pct = current <= goalVal ? 100 : 0;
+    const remaining = current - goalVal;
+
+    $(startId).textContent = start + unit;
+    $(currentId).textContent = current + unit;
+    $(targetId).textContent = goalVal + unit;
+    $(fillId).style.width = pct + '%';
+    $(fillId).style.background = remaining <= 0.05 ? 'var(--good)' : 'var(--accent)';
+    $(remainId).textContent = remaining > 0.05 ? `נותרו ${remaining.toFixed(1)}${unit} ${remainLabel}` : 'הגעת ליעד! 🎉';
+    $(pctId).textContent = Math.round(pct) + '% מהדרך';
+  }
+
+  function renderGoalProgress(){
+    renderGoalBox({
+      boxId: 'goalProgressBox', startId:'goalStart', currentId:'goalCurrent', targetId:'goalTarget',
+      fillId:'goalProgressFill', remainId:'goalRemainingText', pctId:'goalPctText',
+      goalVal: profile.goalWeight, historyKey:'weight', unit:' ק"ג', remainLabel:'ליעד'
+    });
+    renderGoalBox({
+      boxId: 'goalFatBox', startId:'goalFatStart', currentId:'goalFatCurrent', targetId:'goalFatTarget',
+      fillId:'goalFatProgressFill', remainId:'goalFatRemainingText', pctId:'goalFatPctText',
+      goalVal: profile.goalFat, historyKey:'fat', unit:'%', remainLabel:'ליעד'
+    });
+  }
+
+  // ---------- EATING-BASED PROGRESS ESTIMATE ----------
+  const KCAL_PER_KG = 7700;
+  function renderEatingProgress(){
+    const body = $('eatingProgressBody');
+    const targets = calcTargets(profile);
+    const dates = Object.keys(logs).filter(d => logs[d] && logs[d].length > 0).sort();
+
+    if (dates.length === 0) {
+      body.innerHTML = '<div class="empty-note">עדיין אין מספיק ימי תיעוד כדי לחשב הערכה — תמשיך לתעד וההערכה תופיע כאן</div>';
+      return;
+    }
+
+    let cumulativeDeficit = 0;
+    dates.forEach(d => { cumulativeDeficit += (targets.calories - daySums(d).cal); });
+    const estimatedKgChange = cumulativeDeficit / KCAL_PER_KG; // positive = loss
+    const startWeight = bodyHist.length ? bodyHist[0].weight : profile.weight;
+    const estimatedCurrentWeight = +(startWeight - estimatedKgChange).toFixed(1);
+
+    let html = `<div class="goal-stats" style="margin-bottom:8px;">
+      <span>ימים מתועדים: <b>${dates.length}</b></span>
+      <span>מאזן מצטבר: <b>${fmt(Math.abs(cumulativeDeficit))} קק״ל ${cumulativeDeficit >= 0 ? 'גירעון' : 'עודף'}</b></span>
+    </div>
+    <div class="goal-stats" style="margin-bottom:10px;">
+      <span>שינוי משוער: <b>${estimatedKgChange >= 0 ? '-' : '+'}${Math.abs(estimatedKgChange).toFixed(1)} ק"ג</b></span>
+      <span>משקל משוער כרגע: <b>${estimatedCurrentWeight} ק"ג</b></span>
+    </div>`;
+
+    if (profile.goalWeight) {
+      const totalToLose = startWeight - profile.goalWeight;
+      let pct;
+      if (Math.abs(totalToLose) > 0.05) pct = Math.max(0, Math.min(100, (estimatedKgChange / totalToLose) * 100));
+      else pct = estimatedCurrentWeight <= profile.goalWeight ? 100 : 0;
+      const remaining = estimatedCurrentWeight - profile.goalWeight;
+      html += `<div class="goal-progress-track"><div class="goal-progress-fill" style="width:${pct}%; background:${remaining <= 0.05 ? 'var(--good)' : 'var(--accent)'}"></div></div>
+      <div class="goal-stats">
+        <span>${remaining > 0.05 ? `נותרו כ-${remaining.toFixed(1)} ק"ג לפי ההערכה` : 'לפי ההערכה — הגעת ליעד! 🎉'}</span>
+        <span>${Math.round(pct)}% מהדרך (משוער)</span>
+      </div>`;
+    }
+
+    html += `<div class="review-note" style="margin-top:10px;">הערכה גסה על סמך מאזן קלורי מצטבר (כ-7700 קק"ל ≈ 1 ק"ג), מחושבת לפי יעד הקלוריות הנוכחי שלך. זו לא תחליף לשקילה בפועל — כדאי לעדכן משקל אמיתי בהגדרות מדי כמה ימים כדי לכייל את ההערכה.</div>`;
+
+    body.innerHTML = html;
+  }
+
   // ---------- EXPORT / IMPORT ----------
   $('exportBtn').addEventListener('click', () => {
     const data = { profile, logs, bodyHist, exportedAt: new Date().toISOString() };
@@ -1231,10 +1564,13 @@
     renderLogList();
     renderHistory();
     renderTrend();
+    renderGoalProgress();
+    renderEatingProgress();
     renderSavedFoods();
   }
 
   seedDefaultFoods();
+  migrateBaseGrams();
   updateFoodPreview();
   updatePhotoHint();
   if (profile) { renderAll(); } else { toggleSetup(false); }
